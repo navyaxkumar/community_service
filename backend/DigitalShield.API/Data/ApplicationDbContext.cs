@@ -84,6 +84,11 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<LearningModule>(entity =>
         {
+            entity.ToTable(table =>
+            {
+                table.HasCheckConstraint("CK_LearningModules_Order_NonNegative", "[Order] >= 0");
+            });
+
             entity.Property(lm => lm.Title)
                 .IsRequired()
                 .HasMaxLength(200);
@@ -147,6 +152,11 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<QuizQuestion>(entity =>
         {
+            entity.ToTable(table =>
+            {
+                table.HasCheckConstraint("CK_QuizQuestions_Order_NonNegative", "[Order] >= 0");
+            });
+
             entity.Property(qq => qq.QuestionText)
                 .IsRequired();
 
@@ -161,6 +171,11 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<QuizOption>(entity =>
         {
+            entity.ToTable(table =>
+            {
+                table.HasCheckConstraint("CK_QuizOptions_Order_NonNegative", "[Order] >= 0");
+            });
+
             entity.Property(qo => qo.OptionText)
                 .IsRequired();
 
@@ -172,6 +187,11 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<UserProgress>(entity =>
         {
+            entity.ToTable(table =>
+            {
+                table.HasCheckConstraint("CK_UserProgress_ProgressPercentage_Range", "[ProgressPercentage] >= 0 AND [ProgressPercentage] <= 100");
+            });
+
             entity.HasIndex(up => new { up.UserId, up.LearningModuleId })
                 .IsUnique();
 
@@ -194,6 +214,13 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<QuizAttempt>(entity =>
         {
+            entity.ToTable(table =>
+            {
+                table.HasCheckConstraint("CK_QuizAttempts_Score_NonNegative", "[Score] >= 0");
+                table.HasCheckConstraint("CK_QuizAttempts_TotalQuestions_NonNegative", "[TotalQuestions] >= 0");
+                table.HasCheckConstraint("CK_QuizAttempts_Score_NotGreaterThanTotalQuestions", "[Score] <= [TotalQuestions]");
+            });
+
             entity.Property(qa => qa.StartedAt)
                 .HasDefaultValueSql("GETUTCDATE()");
 
@@ -216,6 +243,11 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<Badge>(entity =>
         {
+            entity.ToTable(table =>
+            {
+                table.HasCheckConstraint("CK_Badges_RequiredPoints_NonNegative", "[RequiredPoints] >= 0");
+            });
+
             entity.Property(b => b.Name)
                 .IsRequired()
                 .HasMaxLength(120);

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DigitalShield.API.Controllers;
 
@@ -6,6 +7,7 @@ namespace DigitalShield.API.Controllers;
 [Route("api")]
 public class HealthController : ControllerBase
 {
+    [AllowAnonymous]
     [HttpGet("health")]
     public IActionResult GetHealth()
     {

@@ -1,4 +1,5 @@
 using DigitalShield.API.DTOs.User;
+using DigitalShield.API.Authorization;
 using DigitalShield.API.Interfaces.Repositories;
 using DigitalShield.API.Interfaces.Services;
 using DigitalShield.API.Models;
@@ -8,14 +9,22 @@ namespace DigitalShield.API.Services;
 public class UserService : IUserService
 {
     private readonly IUserRepository _userRepository;
+    private readonly ICurrentUserService? _currentUserService;
 
     public UserService(IUserRepository userRepository)
+        : this(userRepository, null)
+    {
+    }
+
+    public UserService(IUserRepository userRepository, ICurrentUserService? currentUserService)
     {
         _userRepository = userRepository;
+        _currentUserService = currentUserService;
     }
 
     public async Task<UserResponseDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
+        EnsureOwnership(id);
         var user = await _userRepository.GetByIdAsync(id, cancellationToken);
         return user is null ? null : MapToResponse(user);
     }
@@ -40,6 +49,7 @@ public class UserService : IUserService
     public async Task<UserResponseDto?> UpdateAsync(int id, UpdateUserDto request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
+        EnsureOwnership(id);
 
         var user = await _userRepository.GetByIdAsync(id, cancellationToken);
         if (user is null)
@@ -74,5 +84,14 @@ public class UserService : IUserService
             UpdatedAt = user.UpdatedAt,
             IsActive = user.IsActive
         };
+    }
+
+    private void EnsureOwnership(int userId)
+    {
+        if (_currentUserService is not null &&
+            (!_currentUserService.IsAuthenticated || _currentUserService.UserId != userId))
+        {
+            throw new UnauthorizedAccessException("The authenticated user cannot access this profile.");
+        }
     }
 }

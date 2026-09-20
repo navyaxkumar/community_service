@@ -1,53 +1,33 @@
-using DigitalShield.API.DTOs;
-using DigitalShield.API.Interfaces;
+using DigitalShield.API.Authentication;
+using DigitalShield.API.DTOs.User;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DigitalShield.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/auth")]
 public class AuthController : ControllerBase
 {
-    private readonly IAuthService _authService;
+    private readonly IAuthenticationService _authenticationService;
 
-    public AuthController(IAuthService authService)
+    public AuthController(IAuthenticationService authenticationService)
     {
-        _authService = authService;
+        _authenticationService = authenticationService;
     }
 
+    [AllowAnonymous]
     [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Login([FromBody] LoginRequestDto request, CancellationToken cancellationToken)
     {
-        var result = await _authService.LoginAsync(request, cancellationToken);
-
-        if (!result.Success)
-        {
-            return BadRequest(new { message = result.ErrorMessage ?? "Invalid credentials." });
-        }
-
-        return Ok(new
-        {
-            token = result.Token,
-            userName = result.UserName,
-            message = "Login successful."
-        });
+        return Ok(await _authenticationService.LoginAsync(request, cancellationToken));
     }
 
+    [AllowAnonymous]
     [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Register([FromBody] RegisterRequestDto request, CancellationToken cancellationToken)
     {
-        var result = await _authService.RegisterAsync(request, cancellationToken);
-
-        if (!result.Success)
-        {
-            return BadRequest(new { message = result.ErrorMessage ?? "Registration failed." });
-        }
-
-        return Ok(new
-        {
-            token = result.Token,
-            userName = result.UserName,
-            message = "Registration successful."
-        });
+        var user = await _authenticationService.RegisterAsync(request, cancellationToken);
+        return StatusCode(StatusCodes.Status201Created, user);
     }
 }

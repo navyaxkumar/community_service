@@ -1,4 +1,5 @@
 using DigitalShield.API.DTOs.Quiz;
+using DigitalShield.API.Authorization;
 using DigitalShield.API.Interfaces.Repositories;
 using DigitalShield.API.Interfaces.Services;
 using DigitalShield.API.Models;
@@ -9,21 +10,36 @@ public class QuizAttemptService : IQuizAttemptService
 {
     private readonly IQuizAttemptRepository _attemptRepository;
     private readonly IQuizRepository _quizRepository;
+    private readonly ICurrentUserService? _currentUserService;
 
     public QuizAttemptService(IQuizAttemptRepository attemptRepository, IQuizRepository quizRepository)
+        : this(attemptRepository, quizRepository, null)
+    {
+    }
+
+    public QuizAttemptService(
+        IQuizAttemptRepository attemptRepository,
+        IQuizRepository quizRepository,
+        ICurrentUserService? currentUserService)
     {
         _attemptRepository = attemptRepository;
         _quizRepository = quizRepository;
+        _currentUserService = currentUserService;
     }
 
     public async Task<QuizAttemptResponseDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         var attempt = await _attemptRepository.GetByIdAsync(id, cancellationToken);
+        if (attempt is not null)
+        {
+            EnsureOwnership(attempt.UserId);
+        }
         return attempt is null ? null : MapToResponse(attempt);
     }
 
     public async Task<List<QuizAttemptResponseDto>> GetByUserAsync(int userId, CancellationToken cancellationToken = default)
     {
+        EnsureOwnership(userId);
         var attempts = await _attemptRepository.GetByUserAsync(userId, cancellationToken);
         return attempts.Select(MapToResponse).ToList();
     }
@@ -37,6 +53,7 @@ public class QuizAttemptService : IQuizAttemptService
     public async Task<QuizAttemptResponseDto> SubmitAttemptAsync(int userId, SubmitQuizAttemptDto request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
+        EnsureOwnership(userId);
 
         var quiz = await _quizRepository.GetByIdWithDetailsAsync(request.QuizId, cancellationToken);
         if (quiz is null || !quiz.IsPublished)
@@ -98,5 +115,14 @@ public class QuizAttemptService : IQuizAttemptService
             StartedAt = attempt.StartedAt,
             CompletedAt = attempt.CompletedAt
         };
+    }
+
+    private void EnsureOwnership(int userId)
+    {
+        if (_currentUserService is not null &&
+            (!_currentUserService.IsAuthenticated || _currentUserService.UserId != userId))
+        {
+            throw new UnauthorizedAccessException("The authenticated user cannot access this quiz attempt.");
+        }
     }
 }

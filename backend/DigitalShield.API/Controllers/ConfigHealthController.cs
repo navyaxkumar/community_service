@@ -1,4 +1,5 @@
 using DigitalShield.API.Configuration;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -15,6 +16,7 @@ public class ConfigHealthController : ControllerBase
         _applicationSettings = applicationSettings;
     }
 
+    [AllowAnonymous]
     [HttpGet("health/config")]
     public IActionResult GetConfigHealth()
     {

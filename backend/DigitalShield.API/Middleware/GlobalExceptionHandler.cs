@@ -30,7 +30,7 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
 
         if (status >= StatusCodes.Status500InternalServerError)
         {
-            _logger.LogError(exception, "Unhandled exception. TraceId: {TraceId}", traceId);
+            _logger.LogError("Unhandled {ExceptionType}. TraceId: {TraceId}", exception.GetType().Name, traceId);
         }
         else
         {

@@ -1,0 +1,4 @@
+# Placeholder for future Docker Compose configuration.
+# Docker services will be defined in a later phase.
+version: "3.8"
+services: {}

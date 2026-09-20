@@ -1,3 +1,4 @@
+using DigitalShield.API.DTOs;
 using DigitalShield.API.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,15 +16,38 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login(string username, string password)
+    public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
     {
-        var isValid = await _authService.ValidateCredentialsAsync(username, password);
+        var result = await _authService.LoginAsync(request, cancellationToken);
 
-        if (!isValid)
+        if (!result.Success)
         {
-            return BadRequest("Invalid credentials.");
+            return BadRequest(new { message = result.ErrorMessage ?? "Invalid credentials." });
         }
 
-        return Ok(new { message = "Authentication placeholder ready." });
+        return Ok(new
+        {
+            token = result.Token,
+            userName = result.UserName,
+            message = "Login successful."
+        });
+    }
+
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken cancellationToken)
+    {
+        var result = await _authService.RegisterAsync(request, cancellationToken);
+
+        if (!result.Success)
+        {
+            return BadRequest(new { message = result.ErrorMessage ?? "Registration failed." });
+        }
+
+        return Ok(new
+        {
+            token = result.Token,
+            userName = result.UserName,
+            message = "Registration successful."
+        });
     }
 }

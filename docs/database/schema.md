@@ -243,6 +243,6 @@ No additional indexes were added in Phase 3.2 because the existing indexes alrea
 
 Phase 3.2 added `RefineDatabaseSchema`, an additive migration containing check constraints only.
 
-No seed data, content data, admin data, or Phase 3.3 work was added.
+Phase 3.3 and Phase 3.4 seed reference data at runtime through `IDatabaseSeeder`; seed data is not embedded in migrations.
 
 Live SQL migration application remains blocked by the local SQL Server environment, as documented in `docs/database/README.md`.

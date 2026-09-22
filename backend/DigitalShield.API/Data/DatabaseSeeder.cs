@@ -1,5 +1,4 @@
 using DigitalShield.API.Data.Seed;
-using DigitalShield.API.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace DigitalShield.API.Data;
@@ -26,7 +25,14 @@ public class DatabaseSeeder : IDatabaseSeeder
         {
             var recordsAdded = 0;
 
-            recordsAdded += await SeedFraudCategoriesAsync(cancellationToken);
+            var categoriesAdded = await SeedFraudCategoriesAsync(cancellationToken);
+            recordsAdded += categoriesAdded;
+            if (categoriesAdded > 0)
+            {
+                await _context.SaveChangesAsync(cancellationToken);
+            }
+
+            recordsAdded += await SeedLearningModulesAsync(cancellationToken);
             recordsAdded += await SeedBadgesAsync(cancellationToken);
 
             if (_environment.IsDevelopment())
@@ -50,15 +56,56 @@ public class DatabaseSeeder : IDatabaseSeeder
 
     private async Task<int> SeedFraudCategoriesAsync(CancellationToken cancellationToken)
     {
-        if (await _context.FraudCategories.AnyAsync(
-            category => category.Name == FraudCategorySeed.DigitalSafetyBasicsName,
-            cancellationToken))
+        var existingCategoryNames = await _context.FraudCategories
+            .Select(category => category.Name)
+            .ToListAsync(cancellationToken);
+        var existingCategoryNameSet = existingCategoryNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var recordsAdded = 0;
+
+        foreach (var category in FraudCategorySeed.CreateAll())
         {
-            return 0;
+            if (existingCategoryNameSet.Contains(category.Name))
+            {
+                continue;
+            }
+
+            _context.FraudCategories.Add(category);
+            existingCategoryNameSet.Add(category.Name);
+            recordsAdded++;
         }
 
-        _context.FraudCategories.Add(FraudCategorySeed.CreateDigitalSafetyBasics());
-        return 1;
+        return recordsAdded;
+    }
+
+    private async Task<int> SeedLearningModulesAsync(CancellationToken cancellationToken)
+    {
+        var categories = await _context.FraudCategories
+            .ToDictionaryAsync(category => category.Name, StringComparer.OrdinalIgnoreCase, cancellationToken);
+
+        var existingModuleTitles = await _context.LearningModules
+            .Select(module => module.Title)
+            .ToListAsync(cancellationToken);
+        var existingModuleTitleSet = existingModuleTitles.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var recordsAdded = 0;
+
+        foreach (var moduleDefinition in LearningModuleSeed.All)
+        {
+            if (existingModuleTitleSet.Contains(moduleDefinition.Title))
+            {
+                continue;
+            }
+
+            if (!categories.TryGetValue(moduleDefinition.CategoryName, out var category))
+            {
+                throw new InvalidOperationException("Required seed category is missing.");
+            }
+
+            _context.LearningModules.Add(moduleDefinition.Create(category));
+            existingModuleTitleSet.Add(moduleDefinition.Title);
+            recordsAdded++;
+        }
+
+        return recordsAdded;
     }
 
     private async Task<int> SeedBadgesAsync(CancellationToken cancellationToken)

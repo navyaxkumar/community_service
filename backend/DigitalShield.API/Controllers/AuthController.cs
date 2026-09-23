@@ -1,29 +1,33 @@
-using DigitalShield.API.Interfaces;
+using DigitalShield.API.Authentication;
+using DigitalShield.API.DTOs.User;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DigitalShield.API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/auth")]
 public class AuthController : ControllerBase
 {
-    private readonly IAuthService _authService;
+    private readonly IAuthenticationService _authenticationService;
 
-    public AuthController(IAuthService authService)
+    public AuthController(IAuthenticationService authenticationService)
     {
-        _authService = authService;
+        _authenticationService = authenticationService;
     }
 
+    [AllowAnonymous]
     [HttpPost("login")]
-    public async Task<IActionResult> Login(string username, string password)
+    public async Task<IActionResult> Login([FromBody] LoginRequestDto request, CancellationToken cancellationToken)
     {
-        var isValid = await _authService.ValidateCredentialsAsync(username, password);
+        return Ok(await _authenticationService.LoginAsync(request, cancellationToken));
+    }
 
-        if (!isValid)
-        {
-            return BadRequest("Invalid credentials.");
-        }
-
-        return Ok(new { message = "Authentication placeholder ready." });
+    [AllowAnonymous]
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] RegisterRequestDto request, CancellationToken cancellationToken)
+    {
+        var user = await _authenticationService.RegisterAsync(request, cancellationToken);
+        return StatusCode(StatusCodes.Status201Created, user);
     }
 }

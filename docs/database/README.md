@@ -141,9 +141,13 @@ Current reference seed records:
   - `Impersonation & Social Engineering`
   - `Investment & Loan Scams`
 - Learning modules: 21 published modules, 3 under each seeded fraud category.
+- Scenarios: 8 published fictional fraud-awareness scenarios across the seeded categories.
+- Quizzes: 7 published quizzes, one per seeded category.
+- Quiz questions: 35 total, 5 per seeded quiz.
+- Quiz options: 140 total, 4 per seeded question.
 - Badge: `Awareness Starter`
 
-The Phase 3.4 learning content is safe reference education data for general fraud awareness. It uses fictional examples only, avoids real personal/financial information, and does not include operational attack instructions. Quiz, quiz question, quiz option, and scenario seed data are not part of Phase 3.4.
+The Phase 3.4 learning content and Phase 3.5 quiz/scenario content are safe reference education data for general fraud awareness. They use fictional examples only, avoid real personal/financial information, and do not include operational attack instructions.
 
 Development/test data:
 
@@ -170,6 +174,15 @@ Published content decision:
 
 - Phase 3.4 learning modules are seeded as `IsPublished = true` because they are reviewed application reference content and are intended to be visible in development/demo learning flows.
 - If an administrator edits an existing seeded module, later seed runs detect the title and leave the record unchanged.
+- Phase 3.5 scenarios and quizzes are also seeded as `IsPublished = true` because they are reviewed reference content.
+- If an administrator edits an existing seeded scenario or quiz, later seed runs detect the title and leave the record unchanged.
+
+Quiz answer protection:
+
+- Seeded quiz options include `IsCorrect` for server-side scoring and admin/management views.
+- User-facing quiz responses use DTOs that omit `IsCorrect`.
+- Quiz submissions accept only quiz/question/option answer IDs.
+- The server calculates score from stored quiz options and does not trust client-provided score, correctness, or user identity.
 
 ## Existing Migrations
 
@@ -302,3 +315,11 @@ Source/test verification passed for the fraud category and learning module seed 
 No schema migration was required for Phase 3.4 because `FraudCategories.Name` already provides a stable unique natural key and learning modules can be idempotently detected by stable seed titles.
 
 Live SQL Server seed execution remains blocked by the local SQL Server environment described above, so the seed dataset has not been verified against a live local SQL Server database from this machine.
+
+## Phase 3.5 Seed Data Review
+
+Source/test verification passed for the scenario, quiz, quiz question, and quiz option seed dataset.
+
+No schema migration was required for Phase 3.5 because the existing schema already supports scenarios, quizzes, nested questions, nested options, publication state, category relationships, deterministic ordering, and server-side scoring.
+
+Live SQL Server seed execution remains blocked by the local SQL Server environment described above, so the Phase 3.5 seed dataset has not been verified against a live local SQL Server database from this machine.

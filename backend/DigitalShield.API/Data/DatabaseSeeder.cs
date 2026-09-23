@@ -33,6 +33,8 @@ public class DatabaseSeeder : IDatabaseSeeder
             }
 
             recordsAdded += await SeedLearningModulesAsync(cancellationToken);
+            recordsAdded += await SeedScenariosAsync(cancellationToken);
+            recordsAdded += await SeedQuizzesAsync(cancellationToken);
             recordsAdded += await SeedBadgesAsync(cancellationToken);
 
             if (_environment.IsDevelopment())
@@ -102,6 +104,68 @@ public class DatabaseSeeder : IDatabaseSeeder
 
             _context.LearningModules.Add(moduleDefinition.Create(category));
             existingModuleTitleSet.Add(moduleDefinition.Title);
+            recordsAdded++;
+        }
+
+        return recordsAdded;
+    }
+
+    private async Task<int> SeedScenariosAsync(CancellationToken cancellationToken)
+    {
+        var categories = await _context.FraudCategories
+            .ToDictionaryAsync(category => category.Name, StringComparer.OrdinalIgnoreCase, cancellationToken);
+
+        var existingScenarioTitles = await _context.Scenarios
+            .Select(scenario => scenario.Title)
+            .ToListAsync(cancellationToken);
+        var existingScenarioTitleSet = existingScenarioTitles.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var recordsAdded = 0;
+
+        foreach (var scenarioDefinition in ScenarioSeed.All)
+        {
+            if (existingScenarioTitleSet.Contains(scenarioDefinition.Title))
+            {
+                continue;
+            }
+
+            if (!categories.TryGetValue(scenarioDefinition.CategoryName, out var category))
+            {
+                throw new InvalidOperationException("Required seed category is missing.");
+            }
+
+            _context.Scenarios.Add(scenarioDefinition.Create(category));
+            existingScenarioTitleSet.Add(scenarioDefinition.Title);
+            recordsAdded++;
+        }
+
+        return recordsAdded;
+    }
+
+    private async Task<int> SeedQuizzesAsync(CancellationToken cancellationToken)
+    {
+        var categories = await _context.FraudCategories
+            .ToDictionaryAsync(category => category.Name, StringComparer.OrdinalIgnoreCase, cancellationToken);
+
+        var existingQuizTitles = await _context.Quizzes
+            .Select(quiz => quiz.Title)
+            .ToListAsync(cancellationToken);
+        var existingQuizTitleSet = existingQuizTitles.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var recordsAdded = 0;
+
+        foreach (var quizDefinition in QuizSeed.All)
+        {
+            if (existingQuizTitleSet.Contains(quizDefinition.Title))
+            {
+                continue;
+            }
+
+            if (!categories.TryGetValue(quizDefinition.CategoryName, out var category))
+            {
+                throw new InvalidOperationException("Required seed category is missing.");
+            }
+
+            _context.Quizzes.Add(quizDefinition.Create(category));
+            existingQuizTitleSet.Add(quizDefinition.Title);
             recordsAdded++;
         }
 

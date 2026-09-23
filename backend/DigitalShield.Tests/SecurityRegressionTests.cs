@@ -5,6 +5,7 @@ using System.Text.Json;
 using DigitalShield.API.Authorization;
 using DigitalShield.API.Constants;
 using DigitalShield.API.Data;
+using DigitalShield.API.Data.Seed;
 using DigitalShield.API.DTOs.Quiz;
 using DigitalShield.API.DTOs.User;
 using DigitalShield.API.Fraud.Analyzer;
@@ -121,6 +122,57 @@ public class SecurityRegressionTests
 
         Assert.Equal(0, result.Score);
         Assert.Equal(1, result.TotalQuestions);
+        Assert.Equal(7, (await context.QuizAttempts.SingleAsync()).UserId);
+    }
+
+    [Fact]
+    [Trait("Category", "Security")]
+    public async Task QuizDetail_UserResponseDoesNotSerializeCorrectAnswerMetadata()
+    {
+        await using var context = CreateContext();
+        var quiz = CreatePublishedQuiz();
+        context.Quizzes.Add(quiz);
+        await context.SaveChangesAsync();
+        var service = new QuizService(new FraudCategoryRepository(context), new QuizRepository(context));
+
+        var result = await service.GetByIdAsync(quiz.Id);
+        var json = JsonSerializer.Serialize(result, JsonOptions());
+
+        Assert.NotNull(result);
+        Assert.DoesNotContain("isCorrect", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("IsCorrect", json, StringComparison.OrdinalIgnoreCase);
+        Assert.Null(typeof(QuizOptionForUserDto).GetProperty("IsCorrect"));
+    }
+
+    [Fact]
+    [Trait("Category", "Security")]
+    public async Task SeededQuiz_ServerCalculatesScoreFromStoredCorrectOptions()
+    {
+        await using var context = CreateContext();
+        var category = FraudCategorySeed.CreateAll().Single(category => category.Name == FraudCategorySeed.PhishingOtpScamsName);
+        context.FraudCategories.Add(category);
+        var quiz = QuizSeed.All.Single(seed => seed.CategoryName == FraudCategorySeed.PhishingOtpScamsName).Create(category);
+        context.Quizzes.Add(quiz);
+        await context.SaveChangesAsync();
+
+        var answers = quiz.Questions.Select(question => new QuizAnswerDto
+        {
+            QuestionId = question.Id,
+            OptionId = question.Options.Single(option => option.IsCorrect).Id
+        }).ToList();
+        var service = new QuizAttemptService(
+            new QuizAttemptRepository(context),
+            new QuizRepository(context),
+            new TestCurrentUserService(7, Roles.User));
+
+        var result = await service.SubmitAttemptAsync(7, new SubmitQuizAttemptDto
+        {
+            QuizId = quiz.Id,
+            Answers = answers
+        });
+
+        Assert.Equal(quiz.Questions.Count, result.Score);
+        Assert.Equal(quiz.Questions.Count, result.TotalQuestions);
         Assert.Equal(7, (await context.QuizAttempts.SingleAsync()).UserId);
     }
 

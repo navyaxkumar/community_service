@@ -11,7 +11,7 @@ namespace DigitalShield.Tests;
 public class DatabaseSeederTests
 {
     [Fact]
-    public async Task SeedAsync_EmptyDatabase_AddsFraudCategoriesLearningModulesAndFoundationBadge()
+    public async Task SeedAsync_EmptyDatabase_AddsReferenceContentAndFoundationBadge()
     {
         await using var context = CreateInMemoryContext();
         var seeder = CreateSeeder(context, Environments.Development);
@@ -20,9 +20,17 @@ public class DatabaseSeederTests
 
         var categoryCount = await context.FraudCategories.CountAsync();
         var moduleCount = await context.LearningModules.CountAsync();
+        var scenarioCount = await context.Scenarios.CountAsync();
+        var quizCount = await context.Quizzes.CountAsync();
+        var questionCount = await context.QuizQuestions.CountAsync();
+        var optionCount = await context.QuizOptions.CountAsync();
         var badge = await context.Badges.SingleAsync();
         Assert.Equal(FraudCategorySeed.CreateAll().Count, categoryCount);
         Assert.Equal(LearningModuleSeed.All.Count, moduleCount);
+        Assert.Equal(ScenarioSeed.All.Count, scenarioCount);
+        Assert.Equal(QuizSeed.All.Count, quizCount);
+        Assert.Equal(QuizSeed.All.Sum(quiz => quiz.Questions.Count), questionCount);
+        Assert.Equal(QuizSeed.All.Sum(quiz => quiz.Questions.Sum(question => question.Options.Count)), optionCount);
         Assert.Equal(BadgeSeed.AwarenessStarterName, badge.Name);
         Assert.True(badge.IsActive);
         Assert.Equal(0, badge.RequiredPoints);
@@ -39,6 +47,10 @@ public class DatabaseSeederTests
 
         Assert.Equal(FraudCategorySeed.CreateAll().Count, await context.FraudCategories.CountAsync());
         Assert.Equal(LearningModuleSeed.All.Count, await context.LearningModules.CountAsync());
+        Assert.Equal(ScenarioSeed.All.Count, await context.Scenarios.CountAsync());
+        Assert.Equal(QuizSeed.All.Count, await context.Quizzes.CountAsync());
+        Assert.Equal(QuizSeed.All.Sum(quiz => quiz.Questions.Count), await context.QuizQuestions.CountAsync());
+        Assert.Equal(QuizSeed.All.Sum(quiz => quiz.Questions.Sum(question => question.Options.Count)), await context.QuizOptions.CountAsync());
         Assert.Equal(1, await context.Badges.CountAsync(badge =>
             badge.Name == BadgeSeed.AwarenessStarterName));
     }
@@ -141,6 +153,68 @@ public class DatabaseSeederTests
     }
 
     [Fact]
+    public async Task SeedAsync_ExistingScenarioAndQuiz_DoesNotOverwriteSeededContent()
+    {
+        await using var context = CreateInMemoryContext();
+        var category = new FraudCategory
+        {
+            Name = FraudCategorySeed.PhishingOtpScamsName,
+            Description = "Existing category."
+        };
+        context.FraudCategories.Add(category);
+        context.Scenarios.Add(new Scenario
+        {
+            Title = ScenarioSeed.All[0].Title,
+            Description = "Admin edited scenario description.",
+            Situation = "Admin edited situation.",
+            CorrectAction = "Admin edited action.",
+            IsPublished = false,
+            FraudCategory = category
+        });
+        context.Quizzes.Add(new Quiz
+        {
+            Title = QuizSeed.All[0].Title,
+            Description = "Admin edited quiz description.",
+            IsPublished = false,
+            FraudCategory = category,
+            Questions =
+            [
+                new QuizQuestion
+                {
+                    QuestionText = "Admin edited question?",
+                    Explanation = "Admin edited explanation.",
+                    Order = 99,
+                    Options =
+                    [
+                        new QuizOption { OptionText = "Admin edited option", IsCorrect = true, Order = 99 }
+                    ]
+                }
+            ]
+        });
+        await context.SaveChangesAsync();
+
+        var seeder = CreateSeeder(context, Environments.Development);
+
+        await seeder.SeedAsync();
+
+        var existingScenario = await context.Scenarios.SingleAsync(s => s.Title == ScenarioSeed.All[0].Title);
+        var existingQuiz = await context.Quizzes
+            .Include(quiz => quiz.Questions)
+            .ThenInclude(question => question.Options)
+            .SingleAsync(quiz => quiz.Title == QuizSeed.All[0].Title);
+        Assert.Equal("Admin edited scenario description.", existingScenario.Description);
+        Assert.Equal("Admin edited situation.", existingScenario.Situation);
+        Assert.Equal("Admin edited action.", existingScenario.CorrectAction);
+        Assert.False(existingScenario.IsPublished);
+        Assert.Equal("Admin edited quiz description.", existingQuiz.Description);
+        Assert.False(existingQuiz.IsPublished);
+        Assert.Single(existingQuiz.Questions);
+        Assert.Equal("Admin edited question?", existingQuiz.Questions.Single().QuestionText);
+        Assert.Equal(99, existingQuiz.Questions.Single().Order);
+        Assert.Single(existingQuiz.Questions.Single().Options);
+    }
+
+    [Fact]
     public async Task SeedAsync_LearningModulesReferenceExpectedCategories()
     {
         await using var context = CreateInMemoryContext();
@@ -163,6 +237,63 @@ public class DatabaseSeederTests
     }
 
     [Fact]
+    public async Task SeedAsync_ScenariosAndQuizzesReferenceExpectedCategories()
+    {
+        await using var context = CreateInMemoryContext();
+        var seeder = CreateSeeder(context, Environments.Development);
+
+        await seeder.SeedAsync();
+
+        var scenarios = await context.Scenarios
+            .Include(scenario => scenario.FraudCategory)
+            .ToListAsync();
+        var quizzes = await context.Quizzes
+            .Include(quiz => quiz.FraudCategory)
+            .Include(quiz => quiz.Questions)
+            .ThenInclude(question => question.Options)
+            .ToListAsync();
+
+        Assert.All(ScenarioSeed.All, scenarioDefinition =>
+        {
+            var scenario = scenarios.Single(candidate => candidate.Title == scenarioDefinition.Title);
+            Assert.NotNull(scenario.FraudCategory);
+            Assert.Equal(scenarioDefinition.CategoryName, scenario.FraudCategory.Name);
+            Assert.True(scenario.IsPublished);
+        });
+
+        Assert.All(QuizSeed.All, quizDefinition =>
+        {
+            var quiz = quizzes.Single(candidate => candidate.Title == quizDefinition.Title);
+            Assert.NotNull(quiz.FraudCategory);
+            Assert.Equal(quizDefinition.CategoryName, quiz.FraudCategory.Name);
+            Assert.True(quiz.IsPublished);
+            Assert.Equal(quizDefinition.Questions.Count, quiz.Questions.Count);
+        });
+    }
+
+    [Fact]
+    public async Task SeedAsync_SeededQuizQuestionsHaveDeterministicOrderingAndOneCorrectOption()
+    {
+        await using var context = CreateInMemoryContext();
+        var seeder = CreateSeeder(context, Environments.Development);
+
+        await seeder.SeedAsync();
+
+        var questions = await context.QuizQuestions
+            .Include(question => question.Options)
+            .ToListAsync();
+
+        Assert.All(questions, question =>
+        {
+            Assert.InRange(question.Order, 1, 5);
+            Assert.Equal(4, question.Options.Count);
+            Assert.Equal(1, question.Options.Count(option => option.IsCorrect));
+            Assert.Equal([1, 2, 3, 4], question.Options.OrderBy(option => option.Order).Select(option => option.Order).ToArray());
+            Assert.False(string.IsNullOrWhiteSpace(question.Explanation));
+        });
+    }
+
+    [Fact]
     public void SeedContent_DoesNotContainObviousSensitiveOrOperationalAttackContent()
     {
         var sensitiveTerms = new[]
@@ -181,7 +312,11 @@ public class DatabaseSeederTests
 
         var searchableContent = string.Join(
             "\n",
-            LearningModuleSeed.All.SelectMany(module => new[] { module.Title, module.Description, module.Content }));
+            LearningModuleSeed.All.SelectMany(module => new[] { module.Title, module.Description, module.Content })
+                .Concat(ScenarioSeed.All.SelectMany(scenario => new[] { scenario.Title, scenario.Description, scenario.Situation, scenario.CorrectAction }))
+                .Concat(QuizSeed.All.SelectMany(quiz => new[] { quiz.Title, quiz.Description }
+                    .Concat(quiz.Questions.SelectMany(question => new[] { question.QuestionText, question.Explanation }
+                        .Concat(question.Options.Select(option => option.OptionText)))))));
 
         foreach (var term in sensitiveTerms)
         {
@@ -200,6 +335,8 @@ public class DatabaseSeederTests
         Assert.Empty(await context.Users.ToListAsync());
         Assert.Equal(FraudCategorySeed.CreateAll().Count, await context.FraudCategories.CountAsync());
         Assert.Equal(LearningModuleSeed.All.Count, await context.LearningModules.CountAsync());
+        Assert.Equal(ScenarioSeed.All.Count, await context.Scenarios.CountAsync());
+        Assert.Equal(QuizSeed.All.Count, await context.Quizzes.CountAsync());
         Assert.Single(await context.Badges.ToListAsync());
     }
 

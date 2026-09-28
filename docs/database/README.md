@@ -219,7 +219,57 @@ Current migrations:
 20260920130618_InitialCreate
 20260920131521_AddInitialDomainModels
 20260920150244_RefineDatabaseSchema
+20260928181716_AddDatabasePerformanceIndexes
 ```
+
+## Phase 3.7 Index And Query Review
+
+The Phase 3.7 review mapped index decisions to repository queries and controller-backed service calls. No SQL Server execution plans or performance measurements were collected because the local SQL Server environment remains unavailable.
+
+Existing indexes retained:
+
+- Every table primary key, which SQL Server indexes by default.
+- `Users.Email` unique index for normalized registration and login lookup.
+- `FraudCategories.Name` unique index for natural-key seed and category uniqueness.
+- Existing foreign-key lookup indexes where they remain the smallest useful index: `QuizAttempts.QuizId`, `QuizQuestions.QuizId`, `QuizOptions.QuizQuestionId`, and `UserProgress.LearningModuleId`.
+- `UserProgress(UserId, LearningModuleId)` unique index for duplicate prevention and user/module point lookups.
+
+Migration `AddDatabasePerformanceIndexes` adds five query-supporting indexes. Four replace narrower convention-generated foreign-key indexes with composites that keep the foreign key as the leading column, avoiding overlapping indexes.
+
+| Table | Index | Columns | Reason and supported query |
+| --- | --- | --- | --- |
+| `LearningModules` | `IX_LearningModules_FraudCategoryId_Order` | `FraudCategoryId`, `Order` | Supports the category endpoint's category filter and module display ordering. |
+| `Scenarios` | `IX_Scenarios_FraudCategoryId_Title` | `FraudCategoryId`, `Title` | Supports category scenario retrieval ordered by title. |
+| `Quizzes` | `IX_Quizzes_FraudCategoryId_Title` | `FraudCategoryId`, `Title` | Supports category quiz retrieval ordered by title. |
+| `UserProgress` | `IX_UserProgress_UserId_StartedAt` | `UserId`, `StartedAt` | Supports the current user's progress history ordered by most recent start. |
+| `QuizAttempts` | `IX_QuizAttempts_UserId_StartedAt` | `UserId`, `StartedAt` | Supports the current user's quiz-attempt history ordered by most recent start. |
+
+Indexes intentionally not added:
+
+- No duplicate primary-key, unique-email, unique-category-name, or `UserProgress(UserId, LearningModuleId)` indexes.
+- No boolean-only indexes on `IsPublished` or `IsActive`; those columns are low-cardinality and are not selectively queried with a companion database-side filter/order pattern that justifies another index.
+- No indexes on `Users.Role`, `Users.IsActive`, `CreatedAt`, or password-hash data; there is no current administrative list/filter query that needs them, and sensitive values are never indexed for convenience.
+- No `QuizAttempts(QuizId, StartedAt)` index because the current HTTP API exposes only user-owned attempt history. The repository helper is not currently controller-backed.
+- No question/option ordering composites because current quiz details load through the existing foreign-key relationships and perform display ordering in DTO mapping, not through standalone ordered child queries.
+- No badge index because the small active-badge lookup does not justify a separate low-cardinality boolean/order index.
+
+Query review results:
+
+- Repository read queries already use `AsNoTracking()`.
+- Navigation data is loaded with `Include` as part of a single EF Core query; no repository N+1 pattern was found.
+- Read models map to response DTOs and do not expose `PasswordHash`.
+- There is no current API pagination contract. Published reference-content collections are bounded by the managed seed/admin dataset; per-user histories remain unpaginated to avoid an unrelated API redesign in this phase.
+- Authentication, ownership checks, authorization, parameterized EF Core LINQ, and seed behavior were unchanged.
+
+Verification status:
+
+```text
+Index/model verification: Completed
+Migration verification: Completed
+Live SQL performance verification: Blocked
+```
+
+The generated migration contains only index `DropIndex` and `CreateIndex` operations and is reversible through its `Down` method. No schema data, seed data, foreign keys, constraints, tables, or columns were modified.
 
 The model snapshot includes:
 

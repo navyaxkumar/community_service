@@ -102,6 +102,8 @@ public class ApplicationDbContext : DbContext
             entity.Property(lm => lm.CreatedAt)
                 .HasDefaultValueSql("GETUTCDATE()");
 
+            entity.HasIndex(lm => new { lm.FraudCategoryId, lm.Order });
+
             entity.HasOne(lm => lm.FraudCategory)
                 .WithMany(fc => fc.LearningModules)
                 .HasForeignKey(lm => lm.FraudCategoryId)
@@ -126,6 +128,8 @@ public class ApplicationDbContext : DbContext
             entity.Property(s => s.CreatedAt)
                 .HasDefaultValueSql("GETUTCDATE()");
 
+            entity.HasIndex(s => new { s.FraudCategoryId, s.Title });
+
             entity.HasOne(s => s.FraudCategory)
                 .WithMany(fc => fc.Scenarios)
                 .HasForeignKey(s => s.FraudCategoryId)
@@ -143,6 +147,8 @@ public class ApplicationDbContext : DbContext
 
             entity.Property(q => q.CreatedAt)
                 .HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasIndex(q => new { q.FraudCategoryId, q.Title });
 
             entity.HasOne(q => q.FraudCategory)
                 .WithMany(fc => fc.Quizzes)
@@ -195,6 +201,8 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(up => new { up.UserId, up.LearningModuleId })
                 .IsUnique();
 
+            entity.HasIndex(up => new { up.UserId, up.StartedAt });
+
             entity.Property(up => up.ProgressPercentage)
                 .HasDefaultValue(0);
 
@@ -229,6 +237,8 @@ public class ApplicationDbContext : DbContext
 
             entity.Property(qa => qa.Score)
                 .HasDefaultValue(0);
+
+            entity.HasIndex(qa => new { qa.UserId, qa.StartedAt });
 
             entity.HasOne(qa => qa.User)
                 .WithMany(u => u.QuizAttempts)

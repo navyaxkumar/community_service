@@ -149,14 +149,41 @@ Current reference seed records:
 
 The Phase 3.4 learning content and Phase 3.5 quiz/scenario content are safe reference education data for general fraud awareness. They use fictional examples only, avoid real personal/financial information, and do not include operational attack instructions.
 
-Development/test data:
+## Development User Seeding
 
-- No users are seeded.
-- No development admin account is seeded.
-- No plaintext password or password hash is seeded.
-- No predictable credentials such as `admin@example.com` are present.
+Phase 3.6 supports exactly two optional local-development accounts: one `Admin` and one `User`. They are disabled by default and are only considered when all of the following are true:
 
-Production behavior:
+- `DatabaseSeeding:Enabled` is `true`, so the existing startup seeder runs.
+- `DevelopmentUserSeeding:Enabled` is `true`.
+- ASP.NET Core is running in the `Development` environment.
+- All four required account values are supplied outside source control.
+
+The project already has a User Secrets ID. Configure local credentials with User Secrets rather than appsettings files:
+
+```powershell
+dotnet user-secrets set "DatabaseSeeding:Enabled" "true" --project backend\DigitalShield.API\DigitalShield.API.csproj
+dotnet user-secrets set "DevelopmentUserSeeding:Enabled" "true" --project backend\DigitalShield.API\DigitalShield.API.csproj
+dotnet user-secrets set "DevelopmentUserSeeding:AdminEmail" "<development-admin-email>" --project backend\DigitalShield.API\DigitalShield.API.csproj
+dotnet user-secrets set "DevelopmentUserSeeding:AdminPassword" "<unique-development-admin-password>" --project backend\DigitalShield.API\DigitalShield.API.csproj
+dotnet user-secrets set "DevelopmentUserSeeding:UserEmail" "<development-user-email>" --project backend\DigitalShield.API\DigitalShield.API.csproj
+dotnet user-secrets set "DevelopmentUserSeeding:UserPassword" "<unique-development-user-password>" --project backend\DigitalShield.API\DigitalShield.API.csproj
+```
+
+The equivalent environment-variable names use double underscores, for example `DevelopmentUserSeeding__Enabled`. Never commit or log email/password values, password hashes, JWTs, or connection strings.
+
+When explicitly enabled in Development, the seeder normalizes configured emails with the same trim/lowercase rule used by login and registration, then creates only missing accounts. It stores passwords through the existing ASP.NET Core Identity password hasher, so the database receives only `PasswordHash` values. It does not log account credentials or password hashes.
+
+If development-user seeding is enabled but an email or password setting is absent, startup fails with a credential-free configuration error before any seed records are written. There is no fallback password.
+
+Production protection and preservation rules:
+
+- `Production` and all non-Development environments skip development-user seeding even when related settings are present.
+- Re-running the seeder does not create duplicate users.
+- If a configured email already exists, the existing user is preserved: its name, password hash, role, active state, timestamps, and other fields are never changed.
+- In particular, an existing `User` at the configured admin email is not elevated to `Admin`.
+- User seeding changes no schema, so no migration is required.
+
+Reference-data production behavior:
 
 - Production does not receive development/test users.
 - The current foundation reference records are safe application data, but they are only inserted when `DatabaseSeeding:Enabled` is explicitly enabled.

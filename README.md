@@ -78,6 +78,8 @@ If `ConnectionStrings:DefaultConnection` is empty, development falls back to Loc
 Server=(localdb)\MSSQLLocalDB;Database=DigitalShieldDb;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true;
 ```
 
+Optional development seed users are disabled by default. Configure their emails and passwords through .NET User Secrets or environment variables; never add them to `appsettings` files or source control. Both database seeding and development-user seeding must be explicitly enabled, and the accounts are blocked outside ASP.NET Core's `Development` environment. See [database seeding guidance](docs/database/README.md#development-user-seeding).
+
 ## Run Backend
 
 From the repository root:

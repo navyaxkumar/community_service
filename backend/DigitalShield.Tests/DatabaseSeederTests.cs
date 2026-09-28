@@ -1,10 +1,18 @@
+using System.Security.Cryptography;
+using DigitalShield.API.Authentication;
+using DigitalShield.API.Configuration;
+using DigitalShield.API.Constants;
 using DigitalShield.API.Data;
 using DigitalShield.API.Data.Seed;
+using DigitalShield.API.DTOs.User;
 using DigitalShield.API.Models;
+using DigitalShield.API.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace DigitalShield.Tests;
 
@@ -328,7 +336,10 @@ public class DatabaseSeederTests
     public async Task SeedAsync_Production_DoesNotCreateDevelopmentUsers()
     {
         await using var context = CreateInMemoryContext();
-        var seeder = CreateSeeder(context, Environments.Production);
+        var seeder = CreateSeeder(
+            context,
+            Environments.Production,
+            CreateDevelopmentUserSeedSettings());
 
         await seeder.SeedAsync();
 
@@ -341,6 +352,120 @@ public class DatabaseSeederTests
     }
 
     [Fact]
+    public async Task SeedAsync_DevelopmentUserSeedingDisabled_DoesNotCreateUsers()
+    {
+        await using var context = CreateInMemoryContext();
+        var settings = CreateDevelopmentUserSeedSettings();
+        settings.Enabled = false;
+        var seeder = CreateSeeder(context, Environments.Development, settings);
+
+        await seeder.SeedAsync();
+
+        Assert.Empty(await context.Users.ToListAsync());
+    }
+
+    [Fact]
+    public async Task SeedAsync_DevelopmentUserSeedingEnabled_CreatesHashedAdminAndUser()
+    {
+        await using var context = CreateInMemoryContext();
+        var settings = CreateDevelopmentUserSeedSettings();
+        var logger = new CapturingLogger<DatabaseSeeder>();
+        var seeder = CreateSeeder(context, Environments.Development, settings, logger);
+
+        await seeder.SeedAsync();
+
+        var users = await context.Users.OrderBy(user => user.Role).ToListAsync();
+        var admin = users.Single(user => user.Role == Roles.Admin);
+        var regularUser = users.Single(user => user.Role == Roles.User);
+        var passwordHasher = new PasswordHasherService();
+
+        Assert.Equal(2, users.Count);
+        Assert.Equal(EmailNormalizer.Normalize(settings.AdminEmail!), admin.Email);
+        Assert.Equal(EmailNormalizer.Normalize(settings.UserEmail!), regularUser.Email);
+        Assert.True(admin.IsActive);
+        Assert.True(regularUser.IsActive);
+        Assert.True(passwordHasher.VerifyPassword(admin.PasswordHash, settings.AdminPassword!));
+        Assert.True(passwordHasher.VerifyPassword(regularUser.PasswordHash, settings.UserPassword!));
+        Assert.NotEqual(settings.AdminPassword, admin.PasswordHash);
+        Assert.NotEqual(settings.UserPassword, regularUser.PasswordHash);
+        Assert.Null(typeof(User).GetProperty("Password"));
+        Assert.DoesNotContain(logger.Messages, message => message.Contains(settings.AdminPassword!, StringComparison.Ordinal));
+        Assert.DoesNotContain(logger.Messages, message => message.Contains(settings.UserPassword!, StringComparison.Ordinal));
+        Assert.DoesNotContain(logger.Messages, message => message.Contains(admin.PasswordHash, StringComparison.Ordinal));
+        Assert.DoesNotContain(logger.Messages, message => message.Contains(regularUser.PasswordHash, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task SeedAsync_DevelopmentUserSeedingEnabledWithoutCredentials_FailsBeforeWritingRecords()
+    {
+        await using var context = CreateInMemoryContext();
+        var settings = CreateDevelopmentUserSeedSettings();
+        settings.AdminPassword = null;
+        var seeder = CreateSeeder(context, Environments.Development, settings);
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => seeder.SeedAsync());
+
+        Assert.Contains("required credentials are missing", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Empty(await context.Users.ToListAsync());
+        Assert.Empty(await context.FraudCategories.ToListAsync());
+    }
+
+    [Fact]
+    public async Task SeedAsync_DevelopmentUsers_AreIdempotentAndAuthenticateThroughNormalService()
+    {
+        await using var context = CreateInMemoryContext();
+        var settings = CreateDevelopmentUserSeedSettings();
+        var seeder = CreateSeeder(context, Environments.Development, settings);
+
+        await seeder.SeedAsync();
+        await seeder.SeedAsync();
+
+        var authenticationService = CreateAuthenticationService(context);
+        var login = await authenticationService.LoginAsync(new LoginRequestDto
+        {
+            Email = settings.AdminEmail!,
+            Password = settings.AdminPassword!
+        });
+
+        Assert.Equal(2, await context.Users.CountAsync());
+        Assert.Equal(Roles.Admin, login.User.Role);
+        Assert.Equal(EmailNormalizer.Normalize(settings.AdminEmail!), login.User.Email);
+    }
+
+    [Fact]
+    public async Task SeedAsync_ExistingConfiguredUser_IsPreservedAndNotElevated()
+    {
+        await using var context = CreateInMemoryContext();
+        var settings = CreateDevelopmentUserSeedSettings();
+        var passwordHasher = new PasswordHasherService();
+        var originalPasswordHash = passwordHasher.HashPassword(CreateTestSecret());
+        var originalUpdatedAt = DateTime.UtcNow.AddDays(-1);
+        var existingUser = new User
+        {
+            Name = "Existing local account",
+            Email = EmailNormalizer.Normalize(settings.AdminEmail!),
+            PasswordHash = originalPasswordHash,
+            Role = Roles.User,
+            IsActive = false,
+            CreatedAt = DateTime.UtcNow.AddDays(-2),
+            UpdatedAt = originalUpdatedAt
+        };
+        context.Users.Add(existingUser);
+        await context.SaveChangesAsync();
+
+        var seeder = CreateSeeder(context, Environments.Development, settings);
+        await seeder.SeedAsync();
+
+        var preservedUser = await context.Users.SingleAsync(user => user.Id == existingUser.Id);
+        Assert.Equal(2, await context.Users.CountAsync());
+        Assert.Equal("Existing local account", preservedUser.Name);
+        Assert.Equal(originalPasswordHash, preservedUser.PasswordHash);
+        Assert.Equal(Roles.User, preservedUser.Role);
+        Assert.False(preservedUser.IsActive);
+        Assert.Equal(originalUpdatedAt, preservedUser.UpdatedAt);
+    }
+
+    [Fact]
     public async Task SeedAsync_UnavailableDatabase_ThrowsClearFailure()
     {
         await using var context = CreateUnavailableSqlServerContext();
@@ -349,12 +474,49 @@ public class DatabaseSeederTests
         await Assert.ThrowsAnyAsync<Exception>(() => seeder.SeedAsync());
     }
 
-    private static DatabaseSeeder CreateSeeder(ApplicationDbContext context, string environmentName)
+    private static DatabaseSeeder CreateSeeder(
+        ApplicationDbContext context,
+        string environmentName,
+        DevelopmentUserSeedSettings? developmentUserSeedSettings = null,
+        ILogger<DatabaseSeeder>? logger = null)
     {
         return new DatabaseSeeder(
             context,
             new TestHostEnvironment(environmentName),
-            NullLogger<DatabaseSeeder>.Instance);
+            new PasswordHasherService(),
+            Options.Create(developmentUserSeedSettings ?? new DevelopmentUserSeedSettings()),
+            logger ?? NullLogger<DatabaseSeeder>.Instance);
+    }
+
+    private static DevelopmentUserSeedSettings CreateDevelopmentUserSeedSettings()
+    {
+        return new DevelopmentUserSeedSettings
+        {
+            Enabled = true,
+            AdminEmail = "  development-admin@seed.test  ",
+            AdminPassword = CreateTestSecret(),
+            UserEmail = "  development-user@seed.test  ",
+            UserPassword = CreateTestSecret()
+        };
+    }
+
+    private static AuthenticationService CreateAuthenticationService(ApplicationDbContext context)
+    {
+        return new AuthenticationService(
+            new UserRepository(context),
+            new PasswordHasherService(),
+            new JwtTokenService(Options.Create(new JwtSettings
+            {
+                Issuer = "DigitalShield.Tests",
+                Audience = "DigitalShield.Tests",
+                SecretKey = "test-only-signing-key-with-at-least-thirty-two-bytes",
+                ExpiryMinutes = 60
+            })));
+    }
+
+    private static string CreateTestSecret()
+    {
+        return Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
     }
 
     private static ApplicationDbContext CreateInMemoryContext()
@@ -373,6 +535,32 @@ public class DatabaseSeederTests
             .Options;
 
         return new ApplicationDbContext(options);
+    }
+
+    private sealed class CapturingLogger<T> : ILogger<T>
+    {
+        public List<string> Messages { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state)
+            where TState : notnull
+        {
+            return null;
+        }
+
+        public bool IsEnabled(LogLevel logLevel)
+        {
+            return true;
+        }
+
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter)
+        {
+            Messages.Add(formatter(state, exception));
+        }
     }
 
     private sealed class TestHostEnvironment : IHostEnvironment

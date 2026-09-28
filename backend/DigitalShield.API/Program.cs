@@ -29,6 +29,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<ApplicationSettings>(
     builder.Configuration.GetSection(ApplicationSettings.SectionName));
 
+builder.Services.Configure<DevelopmentUserSeedSettings>(
+    builder.Configuration.GetSection(DevelopmentUserSeedSettings.SectionName));
+
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection("Jwt"));
 

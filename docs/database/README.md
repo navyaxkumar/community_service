@@ -149,14 +149,41 @@ Current reference seed records:
 
 The Phase 3.4 learning content and Phase 3.5 quiz/scenario content are safe reference education data for general fraud awareness. They use fictional examples only, avoid real personal/financial information, and do not include operational attack instructions.
 
-Development/test data:
+## Development User Seeding
 
-- No users are seeded.
-- No development admin account is seeded.
-- No plaintext password or password hash is seeded.
-- No predictable credentials such as `admin@example.com` are present.
+Phase 3.6 supports exactly two optional local-development accounts: one `Admin` and one `User`. They are disabled by default and are only considered when all of the following are true:
 
-Production behavior:
+- `DatabaseSeeding:Enabled` is `true`, so the existing startup seeder runs.
+- `DevelopmentUserSeeding:Enabled` is `true`.
+- ASP.NET Core is running in the `Development` environment.
+- All four required account values are supplied outside source control.
+
+The project already has a User Secrets ID. Configure local credentials with User Secrets rather than appsettings files:
+
+```powershell
+dotnet user-secrets set "DatabaseSeeding:Enabled" "true" --project backend\DigitalShield.API\DigitalShield.API.csproj
+dotnet user-secrets set "DevelopmentUserSeeding:Enabled" "true" --project backend\DigitalShield.API\DigitalShield.API.csproj
+dotnet user-secrets set "DevelopmentUserSeeding:AdminEmail" "<development-admin-email>" --project backend\DigitalShield.API\DigitalShield.API.csproj
+dotnet user-secrets set "DevelopmentUserSeeding:AdminPassword" "<unique-development-admin-password>" --project backend\DigitalShield.API\DigitalShield.API.csproj
+dotnet user-secrets set "DevelopmentUserSeeding:UserEmail" "<development-user-email>" --project backend\DigitalShield.API\DigitalShield.API.csproj
+dotnet user-secrets set "DevelopmentUserSeeding:UserPassword" "<unique-development-user-password>" --project backend\DigitalShield.API\DigitalShield.API.csproj
+```
+
+The equivalent environment-variable names use double underscores, for example `DevelopmentUserSeeding__Enabled`. Never commit or log email/password values, password hashes, JWTs, or connection strings.
+
+When explicitly enabled in Development, the seeder normalizes configured emails with the same trim/lowercase rule used by login and registration, then creates only missing accounts. It stores passwords through the existing ASP.NET Core Identity password hasher, so the database receives only `PasswordHash` values. It does not log account credentials or password hashes.
+
+If development-user seeding is enabled but an email or password setting is absent, startup fails with a credential-free configuration error before any seed records are written. There is no fallback password.
+
+Production protection and preservation rules:
+
+- `Production` and all non-Development environments skip development-user seeding even when related settings are present.
+- Re-running the seeder does not create duplicate users.
+- If a configured email already exists, the existing user is preserved: its name, password hash, role, active state, timestamps, and other fields are never changed.
+- In particular, an existing `User` at the configured admin email is not elevated to `Admin`.
+- User seeding changes no schema, so no migration is required.
+
+Reference-data production behavior:
 
 - Production does not receive development/test users.
 - The current foundation reference records are safe application data, but they are only inserted when `DatabaseSeeding:Enabled` is explicitly enabled.
@@ -192,7 +219,57 @@ Current migrations:
 20260920130618_InitialCreate
 20260920131521_AddInitialDomainModels
 20260920150244_RefineDatabaseSchema
+20260928181716_AddDatabasePerformanceIndexes
 ```
+
+## Phase 3.7 Index And Query Review
+
+The Phase 3.7 review mapped index decisions to repository queries and controller-backed service calls. No SQL Server execution plans or performance measurements were collected because the local SQL Server environment remains unavailable.
+
+Existing indexes retained:
+
+- Every table primary key, which SQL Server indexes by default.
+- `Users.Email` unique index for normalized registration and login lookup.
+- `FraudCategories.Name` unique index for natural-key seed and category uniqueness.
+- Existing foreign-key lookup indexes where they remain the smallest useful index: `QuizAttempts.QuizId`, `QuizQuestions.QuizId`, `QuizOptions.QuizQuestionId`, and `UserProgress.LearningModuleId`.
+- `UserProgress(UserId, LearningModuleId)` unique index for duplicate prevention and user/module point lookups.
+
+Migration `AddDatabasePerformanceIndexes` adds five query-supporting indexes. Four replace narrower convention-generated foreign-key indexes with composites that keep the foreign key as the leading column, avoiding overlapping indexes.
+
+| Table | Index | Columns | Reason and supported query |
+| --- | --- | --- | --- |
+| `LearningModules` | `IX_LearningModules_FraudCategoryId_Order` | `FraudCategoryId`, `Order` | Supports the category endpoint's category filter and module display ordering. |
+| `Scenarios` | `IX_Scenarios_FraudCategoryId_Title` | `FraudCategoryId`, `Title` | Supports category scenario retrieval ordered by title. |
+| `Quizzes` | `IX_Quizzes_FraudCategoryId_Title` | `FraudCategoryId`, `Title` | Supports category quiz retrieval ordered by title. |
+| `UserProgress` | `IX_UserProgress_UserId_StartedAt` | `UserId`, `StartedAt` | Supports the current user's progress history ordered by most recent start. |
+| `QuizAttempts` | `IX_QuizAttempts_UserId_StartedAt` | `UserId`, `StartedAt` | Supports the current user's quiz-attempt history ordered by most recent start. |
+
+Indexes intentionally not added:
+
+- No duplicate primary-key, unique-email, unique-category-name, or `UserProgress(UserId, LearningModuleId)` indexes.
+- No boolean-only indexes on `IsPublished` or `IsActive`; those columns are low-cardinality and are not selectively queried with a companion database-side filter/order pattern that justifies another index.
+- No indexes on `Users.Role`, `Users.IsActive`, `CreatedAt`, or password-hash data; there is no current administrative list/filter query that needs them, and sensitive values are never indexed for convenience.
+- No `QuizAttempts(QuizId, StartedAt)` index because the current HTTP API exposes only user-owned attempt history. The repository helper is not currently controller-backed.
+- No question/option ordering composites because current quiz details load through the existing foreign-key relationships and perform display ordering in DTO mapping, not through standalone ordered child queries.
+- No badge index because the small active-badge lookup does not justify a separate low-cardinality boolean/order index.
+
+Query review results:
+
+- Repository read queries already use `AsNoTracking()`.
+- Navigation data is loaded with `Include` as part of a single EF Core query; no repository N+1 pattern was found.
+- Read models map to response DTOs and do not expose `PasswordHash`.
+- There is no current API pagination contract. Published reference-content collections are bounded by the managed seed/admin dataset; per-user histories remain unpaginated to avoid an unrelated API redesign in this phase.
+- Authentication, ownership checks, authorization, parameterized EF Core LINQ, and seed behavior were unchanged.
+
+Verification status:
+
+```text
+Index/model verification: Completed
+Migration verification: Completed
+Live SQL performance verification: Blocked
+```
+
+The generated migration contains only index `DropIndex` and `CreateIndex` operations and is reversible through its `Down` method. No schema data, seed data, foreign keys, constraints, tables, or columns were modified.
 
 The model snapshot includes:
 

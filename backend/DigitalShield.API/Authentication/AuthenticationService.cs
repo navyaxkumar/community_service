@@ -26,7 +26,7 @@ public class AuthenticationService : IAuthenticationService
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var normalizedEmail = NormalizeEmail(request.Email);
+        var normalizedEmail = EmailNormalizer.Normalize(request.Email);
         if (await _userRepository.ExistsByEmailAsync(normalizedEmail, cancellationToken))
         {
             throw new InvalidOperationException("A user with this email already exists.");
@@ -50,7 +50,7 @@ public class AuthenticationService : IAuthenticationService
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var normalizedEmail = NormalizeEmail(request.Email);
+        var normalizedEmail = EmailNormalizer.Normalize(request.Email);
         var user = await _userRepository.GetByEmailAsync(normalizedEmail, cancellationToken);
         if (user is null || !user.IsActive || !_passwordHasher.VerifyPassword(user.PasswordHash, request.Password))
         {
@@ -64,16 +64,6 @@ public class AuthenticationService : IAuthenticationService
             ExpiresAt = token.ExpiresAt,
             User = MapToResponse(user)
         };
-    }
-
-    private static string NormalizeEmail(string email)
-    {
-        if (string.IsNullOrWhiteSpace(email))
-        {
-            throw new ArgumentException("Email is required.", nameof(email));
-        }
-
-        return email.Trim().ToLowerInvariant();
     }
 
     private static UserResponseDto MapToResponse(User user)

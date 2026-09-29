@@ -204,12 +204,12 @@ public sealed class OpenApiDocumentationOperationFilter : IOperationFilter
                 {
                     ["name"] = new OpenApiString("Development User"),
                     ["email"] = new OpenApiString("user@example.test"),
-                    ["password"] = new OpenApiString("Use-a-strong-development-password-123")
+                    ["password"] = new OpenApiString("<client-supplied-password>")
                 },
                 "AuthController.Login" => new OpenApiObject
                 {
                     ["email"] = new OpenApiString("user@example.test"),
-                    ["password"] = new OpenApiString("Use-a-strong-development-password-123")
+                    ["password"] = new OpenApiString("<client-supplied-password>")
                 },
                 "FraudController.Check" => new OpenApiObject
                 {

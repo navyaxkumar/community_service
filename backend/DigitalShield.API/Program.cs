@@ -38,6 +38,11 @@ builder.Services.Configure<JwtSettings>(
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrWhiteSpace(connectionString))
 {
+    if (!builder.Environment.IsDevelopment())
+    {
+        throw new InvalidOperationException("Database connection configuration is missing.");
+    }
+
     connectionString = "Server=(localdb)\\MSSQLLocalDB;Database=DigitalShieldDb;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true;";
     builder.Configuration["ConnectionStrings:DefaultConnection"] = connectionString;
 }

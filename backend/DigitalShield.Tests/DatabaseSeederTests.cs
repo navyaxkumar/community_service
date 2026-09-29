@@ -474,6 +474,21 @@ public class DatabaseSeederTests
         await Assert.ThrowsAnyAsync<Exception>(() => seeder.SeedAsync());
     }
 
+    [Fact]
+    public async Task SeedAsync_Failure_LogsOnlyTheExceptionType()
+    {
+        await using var context = CreateInMemoryContext();
+        var settings = CreateDevelopmentUserSeedSettings();
+        settings.AdminPassword = null;
+        var logger = new CapturingLogger<DatabaseSeeder>();
+        var seeder = CreateSeeder(context, Environments.Development, settings, logger);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => seeder.SeedAsync());
+
+        Assert.Equal("Database seed failed with InvalidOperationException.", Assert.Single(logger.Messages));
+        Assert.DoesNotContain(logger.Exceptions, exception => exception is not null);
+    }
+
     private static DatabaseSeeder CreateSeeder(
         ApplicationDbContext context,
         string environmentName,
@@ -539,6 +554,7 @@ public class DatabaseSeederTests
 
     private sealed class CapturingLogger<T> : ILogger<T>
     {
+        public List<Exception?> Exceptions { get; } = [];
         public List<string> Messages { get; } = [];
 
         public IDisposable? BeginScope<TState>(TState state)
@@ -559,6 +575,7 @@ public class DatabaseSeederTests
             Exception? exception,
             Func<TState, Exception?, string> formatter)
         {
+            Exceptions.Add(exception);
             Messages.Add(formatter(state, exception));
         }
     }

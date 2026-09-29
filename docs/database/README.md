@@ -379,6 +379,10 @@ If encryption errors occur, verify the SQL Server instance certificate/encryptio
 - Repositories use EF Core LINQ; no raw SQL queries are currently used.
 - No destructive database operation was performed during Phase 3.1 verification.
 
+## Phase 3.8 Database Security Review
+
+The dedicated Phase 3.8 data-protection review is documented in [security.md](security.md). It covers data classification, authentication and secret boundaries, stateless fraud analysis, SQL injection and IDOR protections, seed/migration safety, logging, retention, backups, least privilege, and the distinction between source verification and blocked live SQL Server verification.
+
 ## Phase 3.2 Schema Review
 
 Source/model verification passed for the current schema inventory, migration chain, indexes, foreign keys, delete behaviors, and security-sensitive storage review.

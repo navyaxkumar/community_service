@@ -63,7 +63,7 @@ public class DatabaseSeeder : IDatabaseSeeder
         }
         catch (Exception exception)
         {
-            _logger.LogError(exception, "Database seed failed.");
+            _logger.LogError("Database seed failed with {ExceptionType}.", exception.GetType().Name);
             throw;
         }
     }

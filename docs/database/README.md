@@ -383,6 +383,33 @@ If encryption errors occur, verify the SQL Server instance certificate/encryptio
 
 The dedicated Phase 3.8 data-protection review is documented in [security.md](security.md). It covers data classification, authentication and secret boundaries, stateless fraud analysis, SQL injection and IDOR protections, seed/migration safety, logging, retention, backups, least privilege, and the distinction between source verification and blocked live SQL Server verification.
 
+## Phase 3.9 Database Integration Testing
+
+The SQL Server integration suite is located in `backend/DigitalShield.Tests/Integration`. It deliberately does not use EF Core InMemory as a substitute for relational verification.
+
+The suite is opt-in and reads its connection string only from the `ConnectionStrings__IntegrationTest` environment variable. The configured database name must start with `DigitalShield_Integration`; this guard prevents the tests from using a normal development or production database. Do not place this value in source-controlled configuration and do not use a shared database.
+
+When a dedicated SQL Server database is available, run:
+
+```powershell
+$env:ConnectionStrings__IntegrationTest = "<dedicated-sql-server-test-connection-string>"
+dotnet test backend\DigitalShield.sln --filter Category=Integration
+```
+
+The fixture uses `Database.MigrateAsync()` and the normal `DatabaseSeeder` in a Production host environment with development-user seeding disabled. It never calls `EnsureCreated()` or `EnsureDeleted()`. Existing migrations are applied to the isolated database, reference data is seeded idempotently, and each data-mutating test uses a transaction that is rolled back after the test.
+
+The suite covers migration history and actual table discovery, seed idempotency and preservation, registration/login/password hashing, published content filtering, quiz answer non-leakage, server-side quiz scoring and ownership, progress completion and ownership, SQL Server unique/foreign-key constraints, configured delete behaviors, and repository filtering/ordering/no-tracking reads.
+
+Current machine status:
+
+```text
+SQL Server integration connection: BLOCKED
+Reason: ConnectionStrings__IntegrationTest is not configured; Docker is unavailable; LocalDB cannot read its instance registry configuration.
+SQL Server Express service: Running, but no approved dedicated test-database connection is configured.
+```
+
+The integration facts appear as skipped with their BLOCKED reason until the dedicated secret configuration and a reachable SQL Server instance are supplied. They must not be counted as passed relational verification.
+
 ## Phase 3.2 Schema Review
 
 Source/model verification passed for the current schema inventory, migration chain, indexes, foreign keys, delete behaviors, and security-sensitive storage review.

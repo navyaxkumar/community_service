@@ -232,11 +232,21 @@ public sealed class SqlServerDatabaseIntegrationTests
             ProgressPercentage = 50
         });
         var completed = await service.UpdateAsync(user.Id, module.Id, new UpdateUserProgressDto { ProgressPercentage = 100 });
+        var resumed = await service.UpdateAsync(user.Id, module.Id, new UpdateUserProgressDto { ProgressPercentage = 60 });
+        var completedAgain = await service.UpdateAsync(user.Id, module.Id, new UpdateUserProgressDto { ProgressPercentage = 100 });
 
         Assert.Equal(50, created.ProgressPercentage);
         Assert.NotNull(completed);
         Assert.True(completed.IsCompleted);
         Assert.NotNull(completed.CompletedAt);
+        Assert.NotNull(resumed);
+        Assert.False(resumed.IsCompleted);
+        Assert.Null(resumed.CompletedAt);
+        Assert.NotNull(completedAgain);
+        Assert.True(completedAgain.IsCompleted);
+        Assert.NotNull(completedAgain.CompletedAt);
+        Assert.Equal(100, (await context.UserProgress.SingleAsync(item => item.UserId == user.Id)).ProgressPercentage);
+        Assert.Single(context.ChangeTracker.Entries<UserProgress>());
         await Assert.ThrowsAsync<InvalidOperationException>(() => service.CreateAsync(user.Id, new CreateUserProgressDto
         {
             LearningModuleId = module.Id,

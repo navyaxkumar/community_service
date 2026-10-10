@@ -22,6 +22,12 @@ public class UserProgressRepository : IUserProgressRepository
             .FirstOrDefaultAsync(up => up.UserId == userId && up.LearningModuleId == learningModuleId, cancellationToken);
     }
 
+    public async Task<UserProgress?> GetTrackedByUserAndModuleAsync(int userId, int learningModuleId, CancellationToken cancellationToken = default)
+    {
+        return await _context.UserProgress
+            .FirstOrDefaultAsync(up => up.UserId == userId && up.LearningModuleId == learningModuleId, cancellationToken);
+    }
+
     public async Task<List<UserProgress>> GetByUserAsync(int userId, CancellationToken cancellationToken = default)
     {
         return await _context.UserProgress
@@ -47,7 +53,17 @@ public class UserProgressRepository : IUserProgressRepository
 
     public async Task UpdateAsync(UserProgress progress, CancellationToken cancellationToken = default)
     {
-        _context.UserProgress.Update(progress);
+        var trackedProgress = _context.UserProgress.Local
+            .FirstOrDefault(candidate => candidate.Id == progress.Id);
+        if (trackedProgress is null)
+        {
+            _context.UserProgress.Update(progress);
+        }
+        else if (!ReferenceEquals(trackedProgress, progress))
+        {
+            _context.Entry(trackedProgress).CurrentValues.SetValues(progress);
+        }
+
         await _context.SaveChangesAsync(cancellationToken);
     }
 }

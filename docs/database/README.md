@@ -410,6 +410,22 @@ SQL Server Express service: Running, but no approved dedicated test-database con
 
 The integration facts appear as skipped with their BLOCKED reason until the dedicated secret configuration and a reachable SQL Server instance are supplied. They must not be counted as passed relational verification.
 
+## Phase 3.10 Final Database Verification
+
+The final Phase 3 verification record is maintained in [final-verification.md](final-verification.md). It records the exact build/test results, model and migration evidence, security review, current SQL Server blocker, and the strict Phase 4 readiness decision.
+
+Current final status:
+
+```text
+Source/model/migration review: PASS
+Automated regression and security tests: PASS
+Live SQL Server migration, schema, seed, and CRUD verification: BLOCKED
+Phase 3 status: INCOMPLETE
+Phase 4 readiness: NOT READY - BLOCKERS REMAIN
+```
+
+The blocker is environmental rather than a newly found application-code defect: no dedicated `ConnectionStrings__IntegrationTest` setting is configured, Docker is unavailable, and LocalDB cannot create its automatic instance. SQL Server Express is running but is not configured as an approved reachable dedicated test database.
+
 ## Phase 3.2 Schema Review
 
 Source/model verification passed for the current schema inventory, migration chain, indexes, foreign keys, delete behaviors, and security-sensitive storage review.

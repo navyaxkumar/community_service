@@ -78,3 +78,14 @@ The local LocalDB runtime cannot create its automatic instance, so connection-de
 ## Follow-Up Boundary
 
 Live SQL Server checks remain outside this source-level review: applied migration state, database permissions, TLS/certificate behavior, encryption at rest, backup configuration, and restoration verification require an available controlled SQL Server environment.
+
+## Phase 3.10 Final Verification Ledger
+
+On 2026-10-10, the final source, model, migration, configuration, Swagger, and automated-test review reconfirmed the controls above.
+
+- **PASS - source/model/tests:** password hashing and DTO exclusion, normalized unique email flow, fixed registration role, ownership checks, mass-assignment resistance, server-side quiz scoring, answer non-leakage, bounded stateless fraud input, EF Core LINQ data access, safe exception responses, safe Swagger password placeholders, and production development-user seed protection.
+- **PASS - automated evidence:** the full suite completed with 111 passed and 0 failed tests; the focused security suite completed with 14 passed and 0 failed tests.
+- **BLOCKED - live SQL Server:** database permissions, connection encryption, encryption at rest, applied migration history, runtime SQL constraint/delete behavior, backup configuration, and restore testing. No dedicated integration connection is configured, and LocalDB cannot create its automatic instance.
+- **NOT APPLICABLE:** fraud-analysis history retention, URL fetching, shell execution, and arbitrary file access are absent from the current stateless fraud-analysis architecture.
+
+The production database identity must still be provisioned with least privilege, and deployment owners must validate TLS/certificate behavior, encryption-at-rest settings, backup access, and restoration before production use.

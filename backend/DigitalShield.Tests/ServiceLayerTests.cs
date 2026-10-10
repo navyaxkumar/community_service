@@ -228,6 +228,35 @@ public class ServiceLayerTests
     }
 
     [Fact]
+    public async Task UserProgressService_RepeatedUpdates_ReuseTrackedEntityAndPersistCompletionState()
+    {
+        await using var context = CreateContext();
+        var module = new LearningModule { Title = "Safety", Content = "Content" };
+        context.LearningModules.Add(module);
+        await context.SaveChangesAsync();
+        var service = new UserProgressService(new LearningModuleRepository(context), new UserProgressRepository(context));
+
+        await service.CreateAsync(7, new CreateUserProgressDto
+        {
+            LearningModuleId = module.Id,
+            ProgressPercentage = 25
+        });
+        var completed = await service.UpdateAsync(7, module.Id, new UpdateUserProgressDto { ProgressPercentage = 100 });
+        var resumed = await service.UpdateAsync(7, module.Id, new UpdateUserProgressDto { ProgressPercentage = 60 });
+
+        var persisted = await context.UserProgress.SingleAsync();
+        Assert.NotNull(completed);
+        Assert.True(completed.IsCompleted);
+        Assert.NotNull(completed.CompletedAt);
+        Assert.NotNull(resumed);
+        Assert.False(resumed.IsCompleted);
+        Assert.Null(resumed.CompletedAt);
+        Assert.Equal(60, persisted.ProgressPercentage);
+        Assert.False(persisted.IsCompleted);
+        Assert.Single(context.ChangeTracker.Entries<UserProgress>());
+    }
+
+    [Fact]
     public async Task BadgeService_GetActive_MapsBadge()
     {
         await using var context = CreateContext();

@@ -75,7 +75,7 @@ public class UserProgressService : IUserProgressService
         ArgumentNullException.ThrowIfNull(request);
         EnsureOwnership(userId);
 
-        var progress = await _repository.GetByUserAndModuleAsync(userId, learningModuleId, cancellationToken);
+        var progress = await _repository.GetTrackedByUserAndModuleAsync(userId, learningModuleId, cancellationToken);
         if (progress is null)
         {
             return null;

@@ -217,17 +217,18 @@ No user-badge join table exists yet; badge awarding is not part of the current s
 | --- | --- | --- | --- | --- |
 | IX_Users_Email | Users | Email | Yes | Enforce unique login identity |
 | IX_FraudCategories_Name | FraudCategories | Name | Yes | Avoid duplicate category names |
-| IX_LearningModules_FraudCategoryId | LearningModules | FraudCategoryId | No | Category filtering |
-| IX_Scenarios_FraudCategoryId | Scenarios | FraudCategoryId | No | Category filtering |
-| IX_Quizzes_FraudCategoryId | Quizzes | FraudCategoryId | No | Category filtering |
+| IX_LearningModules_FraudCategoryId_Order | LearningModules | FraudCategoryId, Order | No | Category filtering and display ordering |
+| IX_Scenarios_FraudCategoryId_Title | Scenarios | FraudCategoryId, Title | No | Category filtering and title ordering |
+| IX_Quizzes_FraudCategoryId_Title | Quizzes | FraudCategoryId, Title | No | Category filtering and title ordering |
 | IX_QuizQuestions_QuizId | QuizQuestions | QuizId | No | Load questions for quiz |
 | IX_QuizOptions_QuizQuestionId | QuizOptions | QuizQuestionId | No | Load options for question |
 | IX_UserProgress_LearningModuleId | UserProgress | LearningModuleId | No | Module/progress joins |
 | IX_UserProgress_UserId_LearningModuleId | UserProgress | UserId, LearningModuleId | Yes | Prevent duplicate user/module progress |
-| IX_QuizAttempts_UserId | QuizAttempts | UserId | No | User attempt history |
+| IX_UserProgress_UserId_StartedAt | UserProgress | UserId, StartedAt | No | User progress history ordering |
+| IX_QuizAttempts_UserId_StartedAt | QuizAttempts | UserId, StartedAt | No | User attempt history ordering |
 | IX_QuizAttempts_QuizId | QuizAttempts | QuizId | No | Quiz attempt history |
 
-No additional indexes were added in Phase 3.2 because the existing indexes already cover the current foreign-key and lookup patterns.
+Phase 3.7 replaces the narrower category/user foreign-key indexes where a composite index preserves the foreign-key leading column and also supports the current ordering query. The unique lookup indexes and the remaining single-column foreign-key indexes are retained because they support distinct relationship/query patterns.
 
 ## Security And Data Minimization
 
@@ -246,3 +247,9 @@ Phase 3.2 added `RefineDatabaseSchema`, an additive migration containing check c
 Phase 3.3, Phase 3.4, and Phase 3.5 seed reference data at runtime through `IDatabaseSeeder`; seed data is not embedded in migrations.
 
 Live SQL migration application remains blocked by the local SQL Server environment, as documented in `docs/database/README.md`.
+
+## Phase 3.10 Final Verification Status
+
+The final source/model inspection on 2026-10-10 confirmed the ten entity tables, configured cardinality, delete behaviors, check constraints, string lengths, and current index inventory above. `dotnet ef migrations has-pending-model-changes` reported no pending model changes.
+
+This is source/model verification only. Live schema, actual catalog constraints, applied migration history, and record-level integrity are **BLOCKED** until a dedicated SQL Server integration database is configured and reachable. They must not be inferred from this document.

@@ -274,6 +274,7 @@ export const QuizTakingPage: React.FC = () => {
             return (
               <label
                 key={option.id}
+                onClick={() => handleSelectOption(currentQuestion.id, option.id)}
                 className={`flex items-start space-x-3.5 p-4 rounded-xl border cursor-pointer transition-all ${
                   isSelected
                     ? 'border-[#191919] bg-[#F4F3F3]'

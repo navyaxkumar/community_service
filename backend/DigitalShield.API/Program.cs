@@ -120,6 +120,25 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("Admin", policy => policy.RequireRole(Roles.Admin));
 });
 
+var corsOrigins = (builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? builder.Configuration["Cors:AllowedOrigins"]?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+    ?? [])
+    .Where(origin => !string.IsNullOrWhiteSpace(origin) && origin != "*")
+    .ToArray();
+
+if (corsOrigins.Length > 0)
+{
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("ConfiguredCorsPolicy", policy =>
+        {
+            policy.WithOrigins(corsOrigins)
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        });
+    });
+}
+
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
@@ -179,6 +198,11 @@ if (app.Configuration.GetValue<bool>("DatabaseSeeding:Enabled"))
 }
 
 app.UseHttpsRedirection();
+
+if (corsOrigins.Length > 0)
+{
+    app.UseCors("ConfiguredCorsPolicy");
+}
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

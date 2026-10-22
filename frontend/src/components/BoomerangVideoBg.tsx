@@ -60,6 +60,7 @@ export const BoomerangVideoBg: React.FC = () => {
             canvas.height = firstFrame.height;
             ctx.drawImage(firstFrame, 0, 0);
             setIsCanvasReady(true);
+            video.pause();
           }
         }
         return;
@@ -73,6 +74,7 @@ export const BoomerangVideoBg: React.FC = () => {
       if (!ctx) return;
 
       setIsCanvasReady(true);
+      video.pause();
 
       let currentFrameIndex = 0;
       let forward = true;

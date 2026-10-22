@@ -1,11 +1,7 @@
 import React from 'react';
 import { FeatureRow } from './FeatureRow';
 
-interface FeatureInfoPanelProps {
-  onNavigate: (destination: string) => void;
-}
-
-export const FeatureInfoPanel: React.FC<FeatureInfoPanelProps> = ({ onNavigate }) => {
+export const FeatureInfoPanel: React.FC = () => {
   return (
     <section
       className="mt-auto w-full max-w-5xl px-4 sm:px-6 z-10"
@@ -45,22 +41,19 @@ export const FeatureInfoPanel: React.FC<FeatureInfoPanelProps> = ({ onNavigate }
             number="01"
             label="Recognize"
             subtitle="learn common fraud warning signs"
-            destination="learning"
-            onNavigate={onNavigate}
+            to="/learn"
           />
           <FeatureRow
             number="02"
             label="Check"
             subtitle="assess suspicious messages and URLs"
-            destination="scam-checker"
-            onNavigate={onNavigate}
+            to="/scam-checker"
           />
           <FeatureRow
             number="03"
             label="Protect"
             subtitle="practise safer digital habits"
-            destination="quizzes"
-            onNavigate={onNavigate}
+            to="/quizzes"
           />
         </div>
       </div>

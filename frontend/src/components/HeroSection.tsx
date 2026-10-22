@@ -1,12 +1,11 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BoomerangVideoBg } from './BoomerangVideoBg';
 import { FeatureInfoPanel } from './FeatureInfoPanel';
 
-interface HeroSectionProps {
-  onNavigate: (destination: string) => void;
-}
+export const HeroSection: React.FC = () => {
+  const navigate = useNavigate();
 
-export const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate }) => {
   return (
     <section
       id="home"
@@ -40,7 +39,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate }) => {
         <div className="mt-5 sm:mt-7 flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
           <button
             type="button"
-            onClick={() => onNavigate('scam-checker')}
+            onClick={() => navigate('/scam-checker')}
             className="w-full sm:w-auto bg-[#191919] text-white px-7 sm:px-8 py-3 sm:py-3.5 rounded-full text-sm font-medium hover:bg-black/85 active:scale-98 transition-all duration-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#191919]/30"
           >
             Check for Scams
@@ -48,7 +47,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate }) => {
 
           <button
             type="button"
-            onClick={() => onNavigate('learning')}
+            onClick={() => navigate('/learn')}
             className="w-full sm:w-auto px-6 py-3 rounded-full text-sm font-medium text-[#191919]/70 hover:text-[#191919] hover:bg-black/5 transition-colors duration-200 focus:outline-none focus-visible:underline"
           >
             Explore Learning
@@ -57,7 +56,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate }) => {
       </div>
 
       {/* Bottom-anchored Information Panel */}
-      <FeatureInfoPanel onNavigate={onNavigate} />
+      <FeatureInfoPanel />
     </section>
   );
 };

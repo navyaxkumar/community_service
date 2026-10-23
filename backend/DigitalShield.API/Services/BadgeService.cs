@@ -20,6 +20,12 @@ public class BadgeService : IBadgeService
         return badge is null ? null : MapToResponse(badge);
     }
 
+    public async Task<List<BadgeResponseDto>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        var badges = await _repository.GetAllAsync(cancellationToken);
+        return badges.Select(MapToResponse).ToList();
+    }
+
     public async Task<List<BadgeResponseDto>> GetActiveAsync(CancellationToken cancellationToken = default)
     {
         var badges = await _repository.GetActiveAsync(cancellationToken);
@@ -62,6 +68,18 @@ public class BadgeService : IBadgeService
 
         await _repository.UpdateAsync(badge, cancellationToken);
         return MapToResponse(badge);
+    }
+
+    public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var badge = await _repository.GetByIdAsync(id, cancellationToken);
+        if (badge is null)
+        {
+            return false;
+        }
+
+        await _repository.DeleteAsync(badge, cancellationToken);
+        return true;
     }
 
     private static BadgeResponseDto MapToResponse(Badge badge)

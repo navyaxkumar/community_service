@@ -6,5 +6,7 @@ public class UpdateQuizDto
     public string? Description { get; set; }
     public bool IsPublished { get; set; }
     public int? FraudCategoryId { get; set; }
+    public string? TargetAudience { get; set; }
+    public string? DifficultyLevel { get; set; }
     public List<CreateQuizQuestionDto> Questions { get; set; } = new();
 }

@@ -6,8 +6,9 @@ namespace DigitalShield.API.Fraud.Rules;
 public class RewardClaimRule : IFraudRule
 {
     private static readonly Regex Pattern = new(
-        @"\b(you\s+won|claim\s+(your\s+)?prize|cash\s+reward|lottery|gift|reward)\b",
-        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
+        @"\b(you\s+(have\s+)?won|claim\s+(your\s+)?(prize|reward)|cash\s+(reward|prize)|lottery|lucky\s+draw|scratch\s+card|free\s+gift|won\s+rs\.?\s*\d+)\b",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
+        TimeSpan.FromMilliseconds(250));
 
     public FraudRuleResult Evaluate(FraudAnalysisInput input)
     {

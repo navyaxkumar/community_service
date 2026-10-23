@@ -9,4 +9,7 @@ public class QuizResponseDto
     public int? FraudCategoryId { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
+
+    public string TargetAudience { get; set; } = "All";
+    public string DifficultyLevel { get; set; } = "Beginner";
 }

@@ -9,4 +9,5 @@ public interface IFraudCategoryService
     Task<List<FraudCategoryResponseDto>> GetActiveAsync(CancellationToken cancellationToken = default);
     Task<FraudCategoryResponseDto> CreateAsync(CreateFraudCategoryDto request, CancellationToken cancellationToken = default);
     Task<FraudCategoryResponseDto?> UpdateAsync(int id, UpdateFraudCategoryDto request, CancellationToken cancellationToken = default);
+    Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default);
 }

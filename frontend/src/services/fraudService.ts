@@ -16,6 +16,10 @@ export const fraudService = {
     return api.get<FraudCategory[]>('/fraud-categories');
   },
 
+  getAllCategoriesAdmin: async (): Promise<FraudCategory[]> => {
+    return api.get<FraudCategory[]>('/fraud-categories/admin/all');
+  },
+
   getCategoryById: async (id: number): Promise<FraudCategory> => {
     return api.get<FraudCategory>(`/fraud-categories/${id}`);
   },
@@ -26,5 +30,9 @@ export const fraudService = {
 
   updateCategory: async (id: number, category: UpdateFraudCategoryRequest): Promise<FraudCategory> => {
     return api.put<FraudCategory>(`/fraud-categories/${id}`, category);
+  },
+
+  deleteCategory: async (id: number): Promise<void> => {
+    return api.delete<void>(`/fraud-categories/${id}`);
   },
 };

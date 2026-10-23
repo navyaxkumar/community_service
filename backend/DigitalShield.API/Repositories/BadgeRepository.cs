@@ -21,6 +21,14 @@ public class BadgeRepository : IBadgeRepository
             .FirstOrDefaultAsync(b => b.Id == id, cancellationToken);
     }
 
+    public async Task<List<Badge>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.Badges
+            .AsNoTracking()
+            .OrderBy(b => b.RequiredPoints)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<List<Badge>> GetActiveAsync(CancellationToken cancellationToken = default)
     {
         return await _context.Badges
@@ -38,7 +46,25 @@ public class BadgeRepository : IBadgeRepository
 
     public async Task UpdateAsync(Badge badge, CancellationToken cancellationToken = default)
     {
+        var tracked = _context.Badges.Local.FirstOrDefault(e => e.Id == badge.Id);
+        if (tracked != null && !ReferenceEquals(tracked, badge))
+        {
+            _context.Entry(tracked).State = EntityState.Detached;
+        }
+
         _context.Badges.Update(badge);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task DeleteAsync(Badge badge, CancellationToken cancellationToken = default)
+    {
+        var tracked = _context.Badges.Local.FirstOrDefault(e => e.Id == badge.Id);
+        if (tracked != null && !ReferenceEquals(tracked, badge))
+        {
+            _context.Entry(tracked).State = EntityState.Detached;
+        }
+
+        _context.Badges.Remove(badge);
         await _context.SaveChangesAsync(cancellationToken);
     }
 }

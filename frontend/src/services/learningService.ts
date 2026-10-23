@@ -6,12 +6,21 @@ import {
 } from '../types/learning';
 
 export const learningService = {
-  getPublishedModules: async (): Promise<LearningModule[]> => {
-    return api.get<LearningModule[]>('/learning-modules');
+  getPublishedModules: async (audience?: string): Promise<LearningModule[]> => {
+    const query = audience && audience !== 'All' ? `?audience=${encodeURIComponent(audience)}` : '';
+    return api.get<LearningModule[]>(`/learning-modules${query}`);
+  },
+
+  getAllModulesAdmin: async (): Promise<LearningModule[]> => {
+    return api.get<LearningModule[]>('/learning-modules/admin/all');
   },
 
   getModuleById: async (id: number): Promise<LearningModule> => {
     return api.get<LearningModule>(`/learning-modules/${id}`);
+  },
+
+  getModuleByIdAdmin: async (id: number): Promise<LearningModule> => {
+    return api.get<LearningModule>(`/learning-modules/admin/${id}`);
   },
 
   getModulesByCategory: async (categoryId: number): Promise<LearningModule[]> => {
@@ -24,5 +33,13 @@ export const learningService = {
 
   updateModule: async (id: number, module: UpdateLearningModuleRequest): Promise<LearningModule> => {
     return api.put<LearningModule>(`/learning-modules/${id}`, module);
+  },
+
+  setPublishStatus: async (id: number, isPublished: boolean): Promise<LearningModule> => {
+    return api.patch<LearningModule>(`/learning-modules/${id}/publish`, { isPublished });
+  },
+
+  deleteModule: async (id: number): Promise<void> => {
+    return api.delete<void>(`/learning-modules/${id}`);
   },
 };

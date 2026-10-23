@@ -2,6 +2,7 @@ using DigitalShield.API.DTOs.Fraud;
 using DigitalShield.API.Fraud.Analyzer;
 using DigitalShield.API.Fraud.Recommendations;
 using DigitalShield.API.Fraud.Scoring;
+using DigitalShield.API.Fraud.ThreatIntelligence;
 using DigitalShield.API.Interfaces.Services;
 
 namespace DigitalShield.API.Services;
@@ -11,18 +12,22 @@ public class FraudAnalysisService : IFraudAnalysisService
     public const int MaxMessageLength = 10_000;
     public const int MaxUrlLength = 2_048;
     private const string Disclaimer = "This assessment uses predefined risk indicators and is not proof that content is fraudulent or safe.";
+
     private readonly IFraudAnalyzer _analyzer;
     private readonly IRecommendationService _recommendationService;
     private readonly IRiskScoringService _scoringService;
+    private readonly IThreatIntelligenceProvider _threatIntelligenceProvider;
 
     public FraudAnalysisService(
         IFraudAnalyzer analyzer,
         IRiskScoringService scoringService,
-        IRecommendationService recommendationService)
+        IRecommendationService recommendationService,
+        IThreatIntelligenceProvider? threatIntelligenceProvider = null)
     {
         _analyzer = analyzer;
         _scoringService = scoringService;
         _recommendationService = recommendationService;
+        _threatIntelligenceProvider = threatIntelligenceProvider ?? new LocalThreatIntelligenceProvider();
     }
 
     public FraudAnalysisResponseDto Analyze(FraudCheckRequestDto request)
@@ -50,26 +55,36 @@ public class FraudAnalysisService : IFraudAnalysisService
 
         var input = new FraudAnalysisInput(inputType, content, url, request.SenderKnown);
         var indicators = _analyzer.Analyze(input);
-        var score = _scoringService.Score(indicators);
+        var score = _scoringService.Score(indicators, input);
         var recommendations = _recommendationService.GetRecommendations(indicators, score.RiskLevel);
+
+        var targetUrl = inputType == FraudInputType.Url ? url : UrlAnalyzer.ExtractFirstUrl(content);
+        var threatResult = !string.IsNullOrWhiteSpace(targetUrl)
+            ? _threatIntelligenceProvider.CheckUrlAsync(targetUrl).GetAwaiter().GetResult()
+            : null;
 
         return new FraudAnalysisResponseDto
         {
             Score = score.Score,
             RiskLevel = score.RiskLevel.ToString(),
+            RiskReason = score.Reason,
             Indicators = indicators.Select(indicator => new FraudIndicatorDto
             {
                 Code = indicator.Code,
                 Title = indicator.Title,
                 Score = indicator.Score,
                 Explanation = indicator.Explanation,
-                Category = indicator.Category
+                Category = indicator.Category,
+                Evidence = indicator.Evidence,
+                Severity = indicator.Severity
             }).ToList(),
             Recommendations = recommendations.Select(recommendation => new RecommendationDto
             {
                 Code = recommendation.Code,
                 Message = recommendation.Message
             }).ToList(),
+            ExternalReputationCheckPerformed = threatResult?.IsChecked ?? false,
+            ThreatIntelligenceSource = threatResult?.ProviderName ?? _threatIntelligenceProvider.ProviderName,
             Disclaimer = Disclaimer
         };
     }

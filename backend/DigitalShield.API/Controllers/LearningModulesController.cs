@@ -1,4 +1,5 @@
 using DigitalShield.API.Constants;
+using DigitalShield.API.DTOs.Common;
 using DigitalShield.API.DTOs.Learning;
 using DigitalShield.API.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -19,9 +20,9 @@ public class LearningModulesController : ControllerBase
 
     [HttpGet]
     [Authorize]
-    public async Task<IActionResult> GetPublished(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetPublished([FromQuery] string? audience, CancellationToken cancellationToken)
     {
-        return Ok(await _service.GetPublishedAsync(cancellationToken));
+        return Ok(await _service.GetPublishedAsync(audience, cancellationToken));
     }
 
     [HttpGet("category/{categoryId:int}")]
@@ -39,6 +40,21 @@ public class LearningModulesController : ControllerBase
         return module is null ? NotFound() : Ok(module);
     }
 
+    [HttpGet("admin/all")]
+    [Authorize(Roles = Roles.Admin)]
+    public async Task<IActionResult> GetAllAdmin(CancellationToken cancellationToken)
+    {
+        return Ok(await _service.GetAllAsync(cancellationToken));
+    }
+
+    [HttpGet("admin/{id:int}")]
+    [Authorize(Roles = Roles.Admin)]
+    public async Task<IActionResult> GetByIdAdmin(int id, CancellationToken cancellationToken)
+    {
+        var module = await _service.GetAdminByIdAsync(id, cancellationToken);
+        return module is null ? NotFound() : Ok(module);
+    }
+
     [HttpPost]
     [Authorize(Roles = Roles.Admin)]
     public async Task<IActionResult> Create([FromBody] CreateLearningModuleDto request, CancellationToken cancellationToken)
@@ -53,5 +69,35 @@ public class LearningModulesController : ControllerBase
     {
         var module = await _service.UpdateAsync(id, request, cancellationToken);
         return module is null ? NotFound() : Ok(module);
+    }
+
+    [HttpPatch("{id:int}/publish")]
+    [Authorize(Roles = Roles.Admin)]
+    public async Task<IActionResult> SetPublishStatus(int id, [FromBody] PublishStatusRequestDto request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var module = await _service.SetPublishStatusAsync(id, request.IsPublished, cancellationToken);
+            return module is null ? NotFound() : Ok(module);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpDelete("{id:int}")]
+    [Authorize(Roles = Roles.Admin)]
+    public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var deleted = await _service.DeleteAsync(id, cancellationToken);
+            return deleted ? NoContent() : NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
     }
 }

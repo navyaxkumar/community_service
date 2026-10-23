@@ -6,8 +6,10 @@ namespace DigitalShield.API.Fraud.Rules;
 public class PaymentRequestRule : IFraudRule
 {
     private static readonly Regex Pattern = new(
-        @"\b(send|transfer|pay)\s+(money|payment)|\bupi\s+payment\b|\bbank\s+transfer\b|\bpayment\s+required\b",
-        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.NonBacktracking);
+        @"\b(send|transfer|pay|deposit)\s+(money|payment|\d+|rs\.?\s*\d+|fee|charges?|charge|fine)\b|" +
+        @"\b(upi\s+payment|bank\s+transfer|payment\s+required|registration\s+fee|redelivery\s+charge|clearance\s+fee)\b",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant,
+        TimeSpan.FromMilliseconds(250));
 
     public FraudRuleResult Evaluate(FraudAnalysisInput input)
     {

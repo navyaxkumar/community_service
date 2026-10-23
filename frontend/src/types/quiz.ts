@@ -4,12 +4,24 @@ export interface QuizOption {
   order: number;
 }
 
+export interface QuizOptionAdmin extends QuizOption {
+  isCorrect: boolean;
+}
+
 export interface QuizQuestion {
   id: number;
   questionText: string;
   explanation?: string;
   order: number;
   options: QuizOption[];
+}
+
+export interface QuizQuestionAdmin {
+  id: number;
+  questionText: string;
+  explanation?: string;
+  order: number;
+  options: QuizOptionAdmin[];
 }
 
 export interface Quiz {
@@ -20,10 +32,17 @@ export interface Quiz {
   fraudCategoryId?: number;
   createdAt: string;
   updatedAt?: string | null;
+
+  targetAudience?: string;
+  difficultyLevel?: string;
 }
 
 export interface QuizDetail extends Quiz {
   questions: QuizQuestion[];
+}
+
+export interface QuizManagementDetail extends Quiz {
+  questions: QuizQuestionAdmin[];
 }
 
 export interface QuizAnswer {
@@ -43,4 +62,37 @@ export interface QuizAttempt {
   totalQuestions: number;
   startedAt: string;
   completedAt?: string | null;
+}
+
+export interface CreateQuizOptionRequest {
+  optionText: string;
+  isCorrect: boolean;
+  order: number;
+}
+
+export interface CreateQuizQuestionRequest {
+  questionText: string;
+  explanation?: string;
+  order: number;
+  options: CreateQuizOptionRequest[];
+}
+
+export interface CreateQuizRequest {
+  title: string;
+  description?: string;
+  isPublished: boolean;
+  fraudCategoryId?: number;
+  targetAudience?: string;
+  difficultyLevel?: string;
+  questions: CreateQuizQuestionRequest[];
+}
+
+export interface UpdateQuizRequest {
+  title: string;
+  description?: string;
+  isPublished: boolean;
+  fraudCategoryId?: number;
+  targetAudience?: string;
+  difficultyLevel?: string;
+  questions: CreateQuizQuestionRequest[];
 }

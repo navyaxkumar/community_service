@@ -24,6 +24,13 @@ public class BadgesController : ControllerBase
         return Ok(await _service.GetActiveAsync(cancellationToken));
     }
 
+    [HttpGet("admin/all")]
+    [Authorize(Roles = Roles.Admin)]
+    public async Task<IActionResult> GetAllAdmin(CancellationToken cancellationToken)
+    {
+        return Ok(await _service.GetAllAsync(cancellationToken));
+    }
+
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
     {
@@ -45,5 +52,13 @@ public class BadgesController : ControllerBase
     {
         var badge = await _service.UpdateAsync(id, request, cancellationToken);
         return badge is null ? NotFound() : Ok(badge);
+    }
+
+    [HttpDelete("{id:int}")]
+    [Authorize(Roles = Roles.Admin)]
+    public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
+    {
+        var deleted = await _service.DeleteAsync(id, cancellationToken);
+        return deleted ? NoContent() : NotFound();
     }
 }

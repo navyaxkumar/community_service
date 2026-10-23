@@ -22,6 +22,16 @@ public class LearningModuleRepository : ILearningModuleRepository
             .FirstOrDefaultAsync(lm => lm.Id == id, cancellationToken);
     }
 
+    public async Task<List<LearningModule>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.LearningModules
+            .AsNoTracking()
+            .Include(lm => lm.FraudCategory)
+            .OrderBy(lm => lm.Order)
+            .ThenByDescending(lm => lm.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<List<LearningModule>> GetPublishedAsync(CancellationToken cancellationToken = default)
     {
         return await _context.LearningModules
@@ -42,6 +52,11 @@ public class LearningModuleRepository : ILearningModuleRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<bool> HasUserProgressAsync(int id, CancellationToken cancellationToken = default)
+    {
+        return await _context.UserProgress.AnyAsync(up => up.LearningModuleId == id, cancellationToken);
+    }
+
     public async Task AddAsync(LearningModule learningModule, CancellationToken cancellationToken = default)
     {
         await _context.LearningModules.AddAsync(learningModule, cancellationToken);
@@ -50,7 +65,25 @@ public class LearningModuleRepository : ILearningModuleRepository
 
     public async Task UpdateAsync(LearningModule learningModule, CancellationToken cancellationToken = default)
     {
+        var tracked = _context.LearningModules.Local.FirstOrDefault(e => e.Id == learningModule.Id);
+        if (tracked != null && !ReferenceEquals(tracked, learningModule))
+        {
+            _context.Entry(tracked).State = EntityState.Detached;
+        }
+
         _context.LearningModules.Update(learningModule);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task DeleteAsync(LearningModule learningModule, CancellationToken cancellationToken = default)
+    {
+        var tracked = _context.LearningModules.Local.FirstOrDefault(e => e.Id == learningModule.Id);
+        if (tracked != null && !ReferenceEquals(tracked, learningModule))
+        {
+            _context.Entry(tracked).State = EntityState.Detached;
+        }
+
+        _context.LearningModules.Remove(learningModule);
         await _context.SaveChangesAsync(cancellationToken);
     }
 }

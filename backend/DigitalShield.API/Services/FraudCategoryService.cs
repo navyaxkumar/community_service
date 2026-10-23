@@ -85,6 +85,24 @@ public class FraudCategoryService : IFraudCategoryService
         return MapToResponse(category);
     }
 
+    public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var category = await _repository.GetByIdAsync(id, cancellationToken);
+        if (category is null)
+        {
+            return false;
+        }
+
+        var hasContent = await _repository.HasAssociatedContentAsync(id, cancellationToken);
+        if (hasContent)
+        {
+            throw new InvalidOperationException("Cannot delete fraud category that has associated learning modules, quizzes, or scenarios. Deactivate it instead.");
+        }
+
+        await _repository.DeleteAsync(category, cancellationToken);
+        return true;
+    }
+
     private static FraudCategoryResponseDto MapToResponse(FraudCategory category)
     {
         return new FraudCategoryResponseDto

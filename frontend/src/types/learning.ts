@@ -8,6 +8,12 @@ export interface LearningModule {
   fraudCategoryId?: number;
   createdAt: string;
   updatedAt?: string | null;
+
+  targetAudience?: string;
+  difficultyLevel?: string;
+  estimatedMinutes?: number;
+  learningObjectives?: string;
+  safetyTips?: string;
 }
 
 export interface CreateLearningModuleRequest {
@@ -17,6 +23,12 @@ export interface CreateLearningModuleRequest {
   order: number;
   isPublished: boolean;
   fraudCategoryId?: number;
+
+  targetAudience?: string;
+  difficultyLevel?: string;
+  estimatedMinutes?: number;
+  learningObjectives?: string;
+  safetyTips?: string;
 }
 
 export interface UpdateLearningModuleRequest {
@@ -26,4 +38,10 @@ export interface UpdateLearningModuleRequest {
   order: number;
   isPublished: boolean;
   fraudCategoryId?: number;
+
+  targetAudience?: string;
+  difficultyLevel?: string;
+  estimatedMinutes?: number;
+  learningObjectives?: string;
+  safetyTips?: string;
 }

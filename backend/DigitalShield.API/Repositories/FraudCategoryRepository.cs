@@ -38,6 +38,18 @@ public class FraudCategoryRepository : IFraudCategoryRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<bool> HasAssociatedContentAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var hasModules = await _context.LearningModules.AnyAsync(lm => lm.FraudCategoryId == id, cancellationToken);
+        if (hasModules) return true;
+
+        var hasQuizzes = await _context.Quizzes.AnyAsync(q => q.FraudCategoryId == id, cancellationToken);
+        if (hasQuizzes) return true;
+
+        var hasScenarios = await _context.Scenarios.AnyAsync(s => s.FraudCategoryId == id, cancellationToken);
+        return hasScenarios;
+    }
+
     public async Task AddAsync(FraudCategory category, CancellationToken cancellationToken = default)
     {
         await _context.FraudCategories.AddAsync(category, cancellationToken);
@@ -46,7 +58,25 @@ public class FraudCategoryRepository : IFraudCategoryRepository
 
     public async Task UpdateAsync(FraudCategory category, CancellationToken cancellationToken = default)
     {
+        var tracked = _context.FraudCategories.Local.FirstOrDefault(e => e.Id == category.Id);
+        if (tracked != null && !ReferenceEquals(tracked, category))
+        {
+            _context.Entry(tracked).State = EntityState.Detached;
+        }
+
         _context.FraudCategories.Update(category);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task DeleteAsync(FraudCategory category, CancellationToken cancellationToken = default)
+    {
+        var tracked = _context.FraudCategories.Local.FirstOrDefault(e => e.Id == category.Id);
+        if (tracked != null && !ReferenceEquals(tracked, category))
+        {
+            _context.Entry(tracked).State = EntityState.Detached;
+        }
+
+        _context.FraudCategories.Remove(category);
         await _context.SaveChangesAsync(cancellationToken);
     }
 }

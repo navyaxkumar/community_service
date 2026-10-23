@@ -8,6 +8,7 @@ using DigitalShield.API.Fraud.Analyzer;
 using DigitalShield.API.Fraud.Recommendations;
 using DigitalShield.API.Fraud.Rules;
 using DigitalShield.API.Fraud.Scoring;
+using DigitalShield.API.Fraud.ThreatIntelligence;
 using DigitalShield.API.Interfaces;
 using DigitalShield.API.Interfaces.Repositories;
 using DigitalShield.API.Interfaces.Services;
@@ -83,6 +84,12 @@ builder.Services.AddScoped<IFraudRule, UrgencyRule>();
 builder.Services.AddScoped<IFraudRule, RewardClaimRule>();
 builder.Services.AddScoped<IFraudRule, UnknownSenderRule>();
 builder.Services.AddScoped<IFraudRule, AccountSuspensionRule>();
+builder.Services.AddScoped<IFraudRule, EducationalContextRule>();
+builder.Services.AddScoped<IFraudRule, RemoteAccessRule>();
+builder.Services.AddScoped<IFraudRule, JobScamRule>();
+builder.Services.AddScoped<IFraudRule, QrPaymentRule>();
+builder.Services.AddScoped<IFraudRule, BrandImpersonationRule>();
+builder.Services.AddScoped<IThreatIntelligenceProvider, LocalThreatIntelligenceProvider>();
 
 var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>()
     ?? throw new InvalidOperationException("JWT configuration is missing.");

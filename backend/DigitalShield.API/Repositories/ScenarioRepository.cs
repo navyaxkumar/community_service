@@ -22,6 +22,15 @@ public class ScenarioRepository : IScenarioRepository
             .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
     }
 
+    public async Task<List<Scenario>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.Scenarios
+            .AsNoTracking()
+            .Include(s => s.FraudCategory)
+            .OrderByDescending(s => s.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<List<Scenario>> GetPublishedAsync(CancellationToken cancellationToken = default)
     {
         return await _context.Scenarios
@@ -50,7 +59,25 @@ public class ScenarioRepository : IScenarioRepository
 
     public async Task UpdateAsync(Scenario scenario, CancellationToken cancellationToken = default)
     {
+        var tracked = _context.Scenarios.Local.FirstOrDefault(e => e.Id == scenario.Id);
+        if (tracked != null && !ReferenceEquals(tracked, scenario))
+        {
+            _context.Entry(tracked).State = EntityState.Detached;
+        }
+
         _context.Scenarios.Update(scenario);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task DeleteAsync(Scenario scenario, CancellationToken cancellationToken = default)
+    {
+        var tracked = _context.Scenarios.Local.FirstOrDefault(e => e.Id == scenario.Id);
+        if (tracked != null && !ReferenceEquals(tracked, scenario))
+        {
+            _context.Entry(tracked).State = EntityState.Detached;
+        }
+
+        _context.Scenarios.Remove(scenario);
         await _context.SaveChangesAsync(cancellationToken);
     }
 }

@@ -10,4 +10,8 @@ public class ScenarioResponseDto
     public bool IsPublished { get; set; }
     public int? FraudCategoryId { get; set; }
     public DateTime CreatedAt { get; set; }
+
+    public string TargetAudience { get; set; } = "All";
+    public string DifficultyLevel { get; set; } = "Beginner";
+    public string? SafetyTips { get; set; }
 }

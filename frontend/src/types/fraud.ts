@@ -11,6 +11,8 @@ export interface FraudIndicator {
   score: number;
   explanation: string;
   category: string;
+  evidence?: string;
+  severity?: string;
 }
 
 export interface Recommendation {
@@ -20,10 +22,13 @@ export interface Recommendation {
 
 export interface FraudAnalysisResponse {
   score: number;
-  riskLevel: 'Low' | 'Medium' | 'High' | string;
+  riskLevel: 'Low' | 'Medium' | 'High' | 'Critical' | 'UnableToDetermine' | string;
+  riskReason?: string;
   indicators: FraudIndicator[];
   recommendations: Recommendation[];
   disclaimer: string;
+  externalReputationCheckPerformed?: boolean;
+  threatIntelligenceSource?: string;
 }
 
 export interface FraudCategory {

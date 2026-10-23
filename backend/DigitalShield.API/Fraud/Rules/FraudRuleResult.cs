@@ -6,4 +6,6 @@ public sealed record FraudRuleResult(
     int Score,
     string Explanation,
     string Category,
-    bool Triggered);
+    bool Triggered,
+    string? Evidence = null,
+    string? Severity = null);

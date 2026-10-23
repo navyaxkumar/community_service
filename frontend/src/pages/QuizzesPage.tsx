@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useAudience } from '../context/AudienceContext';
 import { quizService } from '../services/quizService';
 import { fraudService } from '../services/fraudService';
 import { Quiz, QuizAttempt } from '../types/quiz';
 import { FraudCategory } from '../types/fraud';
+import { getAudienceMeta } from '../types/audience';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { EmptyState } from '../components/common/EmptyState';
+import { AudienceSelector } from '../components/common/AudienceSelector';
 
 // Fallback preview quizzes for unauthenticated public preview
 const PUBLIC_PREVIEW_QUIZZES: Quiz[] = [
@@ -18,6 +21,8 @@ const PUBLIC_PREVIEW_QUIZZES: Quiz[] = [
     description: 'Test your ability to spot deceptive URLs, spoofed corporate branding, and credential harvesting traps.',
     isPublished: true,
     fraudCategoryId: 1,
+    targetAudience: 'All',
+    difficultyLevel: 'Beginner',
     createdAt: new Date().toISOString(),
   },
   {
@@ -26,6 +31,8 @@ const PUBLIC_PREVIEW_QUIZZES: Quiz[] = [
     description: 'Evaluate scenario interactions with fake law enforcement, banking officers, and urgent tech support claims.',
     isPublished: true,
     fraudCategoryId: 2,
+    targetAudience: 'Seniors',
+    difficultyLevel: 'Beginner',
     createdAt: new Date().toISOString(),
   },
   {
@@ -34,12 +41,15 @@ const PUBLIC_PREVIEW_QUIZZES: Quiz[] = [
     description: 'Test your understanding of instant settlement mechanisms, deceptive QR codes, and refund bypasses.',
     isPublished: true,
     fraudCategoryId: 3,
+    targetAudience: 'YoungAdults',
+    difficultyLevel: 'Intermediate',
     createdAt: new Date().toISOString(),
   },
 ];
 
 export const QuizzesPage: React.FC = () => {
   const { isAuthenticated } = useAuth();
+  const { audience, isHighContrast, fontSize } = useAudience();
 
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [categories, setCategories] = useState<FraudCategory[]>([]);
@@ -56,7 +66,7 @@ export const QuizzesPage: React.FC = () => {
     try {
       if (isAuthenticated) {
         const [fetchedQuizzes, fetchedCategories, fetchedAttempts] = await Promise.all([
-          quizService.getPublishedQuizzes().catch(() => PUBLIC_PREVIEW_QUIZZES),
+          quizService.getPublishedQuizzes(audience).catch(() => PUBLIC_PREVIEW_QUIZZES),
           fraudService.getCategories().catch(() => []),
           quizService.getMyAttempts().catch(() => []),
         ]);
@@ -65,7 +75,13 @@ export const QuizzesPage: React.FC = () => {
         setCategories(fetchedCategories);
         setUserAttempts(fetchedAttempts);
       } else {
-        setQuizzes(PUBLIC_PREVIEW_QUIZZES);
+        const filteredPreview =
+          audience === 'All'
+            ? PUBLIC_PREVIEW_QUIZZES
+            : PUBLIC_PREVIEW_QUIZZES.filter(
+                (q) => q.targetAudience === audience || q.targetAudience === 'All'
+              );
+        setQuizzes(filteredPreview.length > 0 ? filteredPreview : PUBLIC_PREVIEW_QUIZZES);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to load quizzes catalogue.');
@@ -77,31 +93,45 @@ export const QuizzesPage: React.FC = () => {
 
   useEffect(() => {
     fetchQuizzes();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, audience]);
 
   const filteredQuizzes = quizzes.filter((quiz) => {
     return selectedCategoryId === 'all' || quiz.fraudCategoryId === selectedCategoryId;
   });
 
+  const fontClass =
+    fontSize === 'extra-large'
+      ? 'text-lg sm:text-xl'
+      : fontSize === 'large'
+      ? 'text-base sm:text-lg'
+      : 'text-sm';
+
   return (
-    <div className="pt-28 pb-24 max-w-5xl mx-auto px-6 sm:px-10">
+    <div className={`pt-28 pb-24 max-w-5xl mx-auto px-6 sm:px-10 ${isHighContrast ? 'bg-white' : ''}`}>
       {/* Header */}
-      <div className="max-w-2xl mb-12">
-        <span className="text-xs uppercase tracking-widest text-[#191919]/50 font-semibold block mb-2">
-          Interactive Assessment
+      <div className="max-w-3xl mb-8">
+        <span className="text-xs uppercase tracking-widest text-[#191919]/60 font-semibold block mb-2">
+          Interactive Assessment · All Ages
         </span>
         <h1 className="text-3xl sm:text-4xl font-serif text-[#191919]">
           Knowledge & Scenario Quizzes
         </h1>
-        <p className="text-sm text-[#191919]/70 mt-2 leading-relaxed">
+        <p className={`text-[#191919]/75 mt-2 leading-relaxed ${fontClass}`}>
           Test your detection instincts through realistic fraud simulations. Submissions are authoritatively evaluated by the backend engine to build real-world digital safety muscle memory.
         </p>
       </div>
 
+      {/* Audience Selector & Persona Toolbar */}
+      <AudienceSelector className="mb-8" />
+
       {!isAuthenticated && (
         <div className="mb-8 p-4 bg-[#F4F3F3] border border-gray-200 rounded-xl flex items-center justify-between text-xs text-[#191919]/75">
           <span>
-            <strong>Note:</strong> Browsing quiz catalog. <Link to="/login" className="underline font-semibold text-[#191919]">Sign In</Link> to take quizzes, submit answers for scoring, and record achievements.
+            <strong>Note:</strong> Browsing quiz catalog in public preview.{' '}
+            <Link to="/login" className="underline font-semibold text-[#191919]">
+              Sign In
+            </Link>{' '}
+            to submit verified quiz attempts, earn badges, and track your detection accuracy.
           </span>
           <Link
             to="/login"
@@ -118,7 +148,7 @@ export const QuizzesPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setSelectedCategoryId('all')}
-            className={`text-xs px-3.5 py-1.5 rounded-full transition-colors whitespace-nowrap ${
+            className={`text-xs px-3 py-1.5 rounded-full transition-colors whitespace-nowrap ${
               selectedCategoryId === 'all'
                 ? 'bg-[#191919] text-white'
                 : 'bg-gray-100 text-[#191919]/70 hover:bg-gray-200'
@@ -131,7 +161,7 @@ export const QuizzesPage: React.FC = () => {
               key={cat.id}
               type="button"
               onClick={() => setSelectedCategoryId(cat.id)}
-              className={`text-xs px-3.5 py-1.5 rounded-full transition-colors whitespace-nowrap ${
+              className={`text-xs px-3 py-1.5 rounded-full transition-colors whitespace-nowrap ${
                 selectedCategoryId === cat.id
                   ? 'bg-[#191919] text-white'
                   : 'bg-gray-100 text-[#191919]/70 hover:bg-gray-200'
@@ -143,68 +173,88 @@ export const QuizzesPage: React.FC = () => {
         </div>
       )}
 
-      {/* Loading */}
-      {isLoading && (
-        <LoadingSpinner label="Loading published quizzes..." />
-      )}
+      {/* Loading State */}
+      {isLoading && <LoadingSpinner label="Loading quiz assessments catalog..." />}
 
-      {/* Error */}
-      {error && !isLoading && (
-        <ErrorMessage message={error} onRetry={fetchQuizzes} />
-      )}
+      {/* Error State */}
+      {error && !isLoading && <ErrorMessage message={error} onRetry={fetchQuizzes} />}
 
-      {/* Empty */}
+      {/* Empty State */}
       {!isLoading && filteredQuizzes.length === 0 && (
         <EmptyState
-          title="No quizzes available"
-          description="There are currently no published quizzes matching this category filter."
-          actionText="View All Quizzes"
+          title="No quizzes match your filter"
+          description="Try choosing 'All Audiences' or selecting another category to see more assessments."
+          actionText="Clear Filter"
           onAction={() => setSelectedCategoryId('all')}
         />
       )}
 
-      {/* Quizzes List */}
+      {/* Quizzes Grid */}
       {!isLoading && filteredQuizzes.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredQuizzes.map((quiz) => {
             const attempts = userAttempts.filter((a) => a.quizId === quiz.id);
-            const bestScore = attempts.length > 0 ? Math.max(...attempts.map((a) => a.score)) : null;
+            const latestAttempt = attempts.length > 0 ? attempts[attempts.length - 1] : null;
+            const meta = getAudienceMeta(quiz.targetAudience);
 
             return (
               <div
                 key={quiz.id}
-                className="bg-white border border-gray-200 hover:border-gray-400 rounded-2xl p-6 sm:p-7 shadow-sm transition-all duration-200 flex flex-col justify-between"
+                className={`rounded-2xl p-6 transition-all duration-200 flex flex-col justify-between ${
+                  isHighContrast
+                    ? 'bg-white border-2 border-black shadow-sm'
+                    : 'bg-white border border-gray-200 hover:border-gray-400 shadow-sm'
+                }`}
               >
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-mono uppercase text-[#191919]/50">
-                      Quiz #{quiz.id}
+                  <div className="flex items-center justify-between gap-1 flex-wrap">
+                    <span
+                      className={`text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full border ${meta.themeColor}`}
+                    >
+                      {meta.badge}
                     </span>
-                    {isAuthenticated && bestScore !== null && (
-                      <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                        Best Score: {bestScore} pts
+                    {quiz.difficultyLevel && (
+                      <span className="text-[10px] uppercase font-medium px-1.5 py-0.5 rounded bg-gray-100 text-gray-700">
+                        {quiz.difficultyLevel}
                       </span>
                     )}
                   </div>
 
-                  <h3 className="text-xl font-serif text-[#191919] leading-snug">
+                  <h3 className="text-lg font-serif text-[#191919] leading-snug">
                     {quiz.title}
                   </h3>
 
-                  <p className="text-xs text-[#191919]/70 leading-relaxed">
-                    {quiz.description || 'Practice identifying real-world deception signals in this guided scenario check.'}
+                  <p className={`text-[#191919]/70 leading-relaxed line-clamp-3 ${fontClass}`}>
+                    {quiz.description || 'Practice your threat discernment through multiple-choice simulations.'}
                   </p>
                 </div>
 
                 <div className="pt-6 mt-6 border-t border-gray-100 flex items-center justify-between">
-                  <span className="text-[11px] text-[#191919]/50">
-                    {attempts.length > 0 ? `${attempts.length} previous attempt(s)` : 'Multiple-choice scenarios'}
-                  </span>
+                  <div>
+                    {latestAttempt ? (
+                      <span className="text-[11px] font-mono text-emerald-700 flex items-center gap-1 font-semibold">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        Score: {latestAttempt.score} / {latestAttempt.totalQuestions}
+                      </span>
+                    ) : (
+                      <span className="text-[11px] font-mono text-[#191919]/50">
+                        Unattempted
+                      </span>
+                    )}
+                  </div>
+
                   <Link
                     to={`/quizzes/${quiz.id}`}
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#191919] hover:underline"
+                    className={`inline-flex items-center gap-1.5 font-semibold text-[#191919] hover:underline ${
+                      audience === 'EarlyLearners'
+                        ? 'px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs hover:bg-emerald-700 shadow-sm no-underline'
+                        : isHighContrast
+                        ? 'px-3 py-1.5 bg-black text-white rounded-lg text-xs hover:bg-gray-800'
+                        : 'text-xs'
+                    }`}
                   >
-                    {attempts.length > 0 ? 'Retake Quiz' : 'Start Quiz'} <ArrowRight className="w-3.5 h-3.5" />
+                    <span>{latestAttempt ? 'Retake Quiz' : 'Start Quiz'}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
               </div>

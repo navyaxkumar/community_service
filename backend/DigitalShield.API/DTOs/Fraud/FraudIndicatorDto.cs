@@ -7,4 +7,6 @@ public class FraudIndicatorDto
     public int Score { get; set; }
     public string Explanation { get; set; } = string.Empty;
     public string Category { get; set; } = string.Empty;
+    public string? Evidence { get; set; }
+    public string? Severity { get; set; }
 }

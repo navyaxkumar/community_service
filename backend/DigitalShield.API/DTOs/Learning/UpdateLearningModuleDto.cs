@@ -8,4 +8,10 @@ public class UpdateLearningModuleDto
     public int Order { get; set; }
     public bool IsPublished { get; set; }
     public int? FraudCategoryId { get; set; }
+
+    public string? TargetAudience { get; set; }
+    public string? DifficultyLevel { get; set; }
+    public int? EstimatedMinutes { get; set; }
+    public string? LearningObjectives { get; set; }
+    public string? SafetyTips { get; set; }
 }

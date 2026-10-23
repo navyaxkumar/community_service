@@ -9,7 +9,7 @@ public static class QuizSeed
         new(
             FraudCategorySeed.PhishingOtpScamsName,
             "Phishing and OTP Safety Quiz",
-            "Practice safe responses to OTP requests, suspicious messages, and fake support claims.",
+            "[Audience: All | Difficulty: Beginner] Practice safe responses to OTP requests, suspicious messages, and fake support claims.",
             [
                 Question("What is the safest response when an unexpected caller asks for your OTP?",
                     "Unexpected OTP requests are a warning sign. OTPs should not be shared with callers or message senders.",
@@ -50,7 +50,7 @@ public static class QuizSeed
         new(
             FraudCategorySeed.UpiPaymentFraudName,
             "UPI and Payment Request Safety Quiz",
-            "Check your understanding of collect requests, QR codes, and payment confirmation screens.",
+            "[Audience: YoungAdults | Difficulty: Intermediate] Check your understanding of collect requests, QR codes, and payment confirmation screens.",
             [
                 Question("What can happen if you approve a collect request and enter your payment PIN?",
                     "A collect request can move money from your account when approved.",
@@ -91,7 +91,7 @@ public static class QuizSeed
         new(
             FraudCategorySeed.FakeJobScamsName,
             "Fake Job Offer Safety Quiz",
-            "Learn safer responses to advance-fee job offers and document requests.",
+            "[Audience: YoungAdults | Difficulty: Intermediate] Learn safer responses to advance-fee job offers and document requests.",
             [
                 Question("A recruiter asks for a fee before an interview. What is safest?",
                     "Advance fees are a common warning sign in fake job offers.",
@@ -132,7 +132,7 @@ public static class QuizSeed
         new(
             FraudCategorySeed.OnlineShoppingScamsName,
             "Online Shopping Scam Safety Quiz",
-            "Practice identifying fake discounts, unsafe payments, and suspicious marketplace behavior.",
+            "[Audience: Children | Difficulty: Beginner] Practice identifying fake discounts, unsafe payments, and suspicious marketplace behavior.",
             [
                 Question("A seller offers a costly item at an unusually low price and wants direct payment. What should you do?",
                     "Unrealistic discounts and outside-platform payments are common warning signs.",
@@ -173,7 +173,7 @@ public static class QuizSeed
         new(
             FraudCategorySeed.FakeWebsitesLinksName,
             "Fake Website and Link Safety Quiz",
-            "Practice checking links, fake forms, and unsafe download requests.",
+            "[Audience: Teens | Difficulty: Intermediate] Practice checking links, fake forms, and unsafe download requests.",
             [
                 Question("What is safest when a message link asks you to log in?",
                     "Opening the official service yourself avoids trusting an unverified link.",
@@ -214,7 +214,7 @@ public static class QuizSeed
         new(
             FraudCategorySeed.ImpersonationSocialEngineeringName,
             "Impersonation and Pressure Safety Quiz",
-            "Learn how to slow down, verify identity, and resist secrecy pressure.",
+            "[Audience: Seniors | Difficulty: Beginner] Learn how to slow down, verify identity, and resist secrecy pressure.",
             [
                 Question("A message says a family member changed numbers and needs money urgently. What should you do?",
                     "Independent verification helps prevent impersonation scams.",
@@ -255,7 +255,7 @@ public static class QuizSeed
         new(
             FraudCategorySeed.InvestmentLoanScamsName,
             "Investment and Loan Scam Safety Quiz",
-            "Practice recognizing guaranteed returns, advance fees, and pressure-based financial offers.",
+            "[Audience: Professionals | Difficulty: Advanced] Practice recognizing guaranteed returns, advance fees, and pressure-based financial offers.",
             [
                 Question("What is a warning sign in an investment offer?",
                     "Guaranteed high returns are unrealistic and should be verified carefully.",

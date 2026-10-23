@@ -263,7 +263,175 @@ public static class LearningModuleSeed
 
             A safer response is to take time, ask questions, and avoid any financial decision based only on pressure or excitement.
             """,
-            3)
+            3),
+
+        // --- Age-Adaptive Curriculum: Early Learners (Ages 5–7) ---
+        new(
+            FraudCategorySeed.PhishingOtpScamsName,
+            "Secret Words and Trusted Grown-Ups",
+            "[Audience: EarlyLearners | Difficulty: Beginner | Time: 2 mins] Friendly lessons on secret passwords and asking a grown-up for help.",
+            """
+            <!--digitalshield-metadata:{"audience":"EarlyLearners","difficulty":"Beginner","duration":2,"objectives":"Understand that passwords are like secret keys and should only be shared with trusted parents.","safetyTips":"Never tell anyone your secret word in an online game."}-->
+            Never tell anyone your secret password. Passwords are like secret house keys for your games.
+
+            If a message makes you feel worried or surprised, stop playing. Do not click any buttons.
+
+            Always show the screen to a trusted grown-up like your mom, dad, or teacher. They will keep you safe!
+            """,
+            4),
+        new(
+            FraudCategorySeed.FakeWebsitesLinksName,
+            "When a Game Asks for Your Parent's Phone",
+            "[Audience: EarlyLearners | Difficulty: Beginner | Time: 2 mins] Simple rules about free prizes and popups in children's games.",
+            """
+            <!--digitalshield-metadata:{"audience":"EarlyLearners","difficulty":"Beginner","duration":2,"objectives":"Learn to stop and ask an adult before entering numbers or clicking popup boxes.","safetyTips":"Ask a trusted adult whenever a game promises free gifts or prizes."}-->
+            Sometimes a game screen says you won a giant prize or shiny gems. Then it asks for your mom's phone number.
+
+            Stop and pause! Real prizes do not ask for secret phone numbers.
+
+            Turn around and ask your trusted adult before touching the screen. Good job being a safe digital explorer!
+            """,
+            4),
+
+        // --- Age-Adaptive Curriculum: Children (Ages 8–12) ---
+        new(
+            FraudCategorySeed.OnlineShoppingScamsName,
+            "Game Reward Traps & Free Coin Scams",
+            "[Audience: Children | Difficulty: Beginner | Time: 3 mins] Spot fake giveaways and currency tricks in Roblox and Fortnite.",
+            """
+            <!--digitalshield-metadata:{"audience":"Children","difficulty":"Beginner","duration":3,"objectives":"Spot fake giveaways and game currency traps in Roblox, Fortnite, and Minecraft.","safetyTips":"Never download extra apps to get free in-game currency."}-->
+            You might see videos or chat messages promising "Free 10,000 Robux or V-Bucks if you click this link."
+
+            These are tricks called giveaway scams. Scammers want your account login, or they want you to download files that can harm your computer.
+
+            Real game companies do not give away paid coins on random websites. If an offer sounds too good to be true, it is always a scam. Tell an adult if someone in a game pressures you.
+            """,
+            4),
+        new(
+            FraudCategorySeed.PhishingOtpScamsName,
+            "Secret Passwords and OTP Safety for Kids",
+            "[Audience: Children | Difficulty: Beginner | Time: 3 mins] Learn why verification codes on your tablet must stay secret.",
+            """
+            <!--digitalshield-metadata:{"audience":"Children","difficulty":"Beginner","duration":3,"objectives":"Understand why one-time codes sent to a phone or tablet should never be forwarded.","safetyTips":"Keep your two-factor codes private from all online friends."}-->
+            An OTP is a secret 4-digit or 6-digit number sent to your phone or tablet. It proves that you are the real owner.
+
+            If an online friend says, "Send me the code you just got so I can add you to my game team," do not send it! They are trying to take over your account.
+
+            No game moderator, friend, or support team will ever need your OTP. Keep it strictly private.
+            """,
+            5),
+
+        // --- Age-Adaptive Curriculum: Teenagers (Ages 13–17) ---
+        new(
+            FraudCategorySeed.ImpersonationSocialEngineeringName,
+            "Social Media Impersonation & Fake DM Traps",
+            "[Audience: Teens | Difficulty: Intermediate | Time: 4 mins] Defend against clone accounts, brand collab scams, and phishing DMs.",
+            """
+            <!--digitalshield-metadata:{"audience":"Teens","difficulty":"Intermediate","duration":4,"objectives":"Identify clone profiles, brand sponsorship DMs, and phishing links on Instagram, Discord, and TikTok.","safetyTips":"Never log into your social account through a link sent in a DM."}-->
+            Scammers frequently copy public profiles of creators or friends, using almost identical usernames (like adding an underscore or swapping letters).
+
+            They might send you a DM claiming: "Vote for my photography portfolio" or "You have been selected for a brand clothing sponsorship." The link opens a fake login screen designed to steal your credentials.
+
+            Always verify suspicious requests by asking your friend on a different channel or in real life. Never enter your password on a page opened directly through a social media direct message.
+            """,
+            4),
+        new(
+            FraudCategorySeed.FakeWebsitesLinksName,
+            "Gaming Account Trades & Recovery Traps",
+            "[Audience: Teens | Difficulty: Intermediate | Time: 4 mins] Protect Steam and Epic accounts from trade bots and middleman tricks.",
+            """
+            <!--digitalshield-metadata:{"audience":"Teens","difficulty":"Intermediate","duration":4,"objectives":"Protect Steam, Epic, and Discord accounts from recovery code theft and middleman escrow tricks.","safetyTips":"Use official platform trade windows only; avoid third-party verification bots."}-->
+            Account theft often happens when someone offers to buy your account or trade rare skins. They might send a link to a "trusted middleman site" or ask you to change your account email address.
+
+            Once you change your account email or share a recovery link, the attacker locks you out permanently and sells your account inventory.
+
+            If you ever feel pressured, threatened, or tricked, talk to a trusted adult or school counselor immediately. Do not feel ashamed—scammers exploit human trust.
+            """,
+            4),
+
+        // --- Age-Adaptive Curriculum: Students & Young Adults (Ages 18–24) ---
+        new(
+            FraudCategorySeed.FakeJobScamsName,
+            "Spotting Fake Work-From-Home & Internship Traps",
+            "[Audience: YoungAdults | Difficulty: Intermediate | Time: 5 mins] Recognize advance-fee job postings and video-liking scams.",
+            """
+            <!--digitalshield-metadata:{"audience":"YoungAdults","difficulty":"Intermediate","duration":5,"objectives":"Evaluate student remote job offers, freelance task scams, and upfront equipment fee deception.","safetyTips":"Legitimate employers never charge application, training, or equipment verification fees."}-->
+            College students and recent graduates are prime targets for employment fraud. Common patterns include unsolicited messages on WhatsApp or Telegram offering $100/day for liking YouTube videos or completing app reviews.
+
+            The scam usually begins with a small "payout" to build confidence, followed by demanding a "refundable security deposit" to unlock higher-tier tasks. Once money is sent, the scammers disappear.
+
+            Always cross-reference job openings on official corporate career portals. Legitimate employers will never ask you to pay money to receive a salary.
+            """,
+            4),
+        new(
+            FraudCategorySeed.UpiPaymentFraudName,
+            "UPI & QR Code Traps: Receiving vs Paying",
+            "[Audience: YoungAdults | Difficulty: Intermediate | Time: 5 mins] Master payment app mechanics: QR codes and PINs never receive money.",
+            """
+            <!--digitalshield-metadata:{"audience":"YoungAdults","difficulty":"Intermediate","duration":5,"objectives":"Understand payment app mechanics and debunk the 'scan QR to receive scholarship/refund' myth.","safetyTips":"Your UPI PIN is required ONLY to send money, never to receive funds."}-->
+            Many young adults using peer-to-peer payment apps (such as Google Pay, PhonePe, or Paytm) fall for the "Collect Request" deception. A seller or buyer sends a QR code claiming, "Scan this to claim your university refund or scholarship money."
+
+            The fundamental technical rule of digital payments: Scanning a QR code or entering a PIN is ALWAYS an outgoing transaction authorizing money to leave your account.
+
+            To receive money, you only need to provide your UPI ID or phone number. You never need to enter your PIN, approve a notification, or scan an image.
+            """,
+            4),
+
+        // --- Age-Adaptive Curriculum: Senior Citizens & First-Time Digital Users ---
+        new(
+            FraudCategorySeed.PhishingOtpScamsName,
+            "Recognizing Fake Bank & Pension Callers",
+            "[Audience: Seniors | Difficulty: Beginner | Time: 4 mins] Calm, respectful guidance on telephone banking and pension scams.",
+            """
+            <!--digitalshield-metadata:{"audience":"Seniors","difficulty":"Beginner","duration":4,"objectives":"Learn calm, confident responses to callers claiming your bank account or pension will be suspended.","safetyTips":"Hang up and dial the official bank phone number printed on the back of your debit card."}-->
+            Scammers often target seniors by pretending to be helpful bank managers, government officials, or electricity board agents. They use serious, rushed voices, claiming your account will be blocked within hours unless you verify immediately.
+
+            Please remember: Real banks and government pension offices will NEVER call and demand your password, ATM PIN, or the SMS verification code (OTP).
+
+            It is always safe to say, "I will check this myself," and hang up the phone. You are in complete control. Call your bank using the phone number printed clearly on the back of your debit card, or ask a trusted family member for help.
+            """,
+            6),
+        new(
+            FraudCategorySeed.ImpersonationSocialEngineeringName,
+            "Never Install Remote Control Apps (AnyDesk/TeamViewer)",
+            "[Audience: Seniors | Difficulty: Beginner | Time: 4 mins] Understand why screen-sharing apps should never be installed for callers.",
+            """
+            <!--digitalshield-metadata:{"audience":"Seniors","difficulty":"Beginner","duration":4,"objectives":"Understand why callers asking you to install remote support apps on your phone or tablet are dangerous.","safetyTips":"Never download screen-sharing apps like AnyDesk, TeamViewer, or QuickSupport on instruction from a caller."}-->
+            A caller may say they need to "update your digital banking app" or "fix a refund error," and ask you to install an application such as AnyDesk, TeamViewer, or RustDesk from the app store.
+
+            These applications allow someone in another location to see everything on your phone screen and control your device, including reading your banking passwords and text messages.
+
+            Legitimate customer support staff will never ask you to install screen-sharing software on your personal phone. If anyone asks you to do this, immediately hang up and do not open the app.
+            """,
+            4),
+
+        // --- Age-Adaptive Curriculum: Professionals & Organizations ---
+        new(
+            FraudCategorySeed.ImpersonationSocialEngineeringName,
+            "Business Email Compromise (BEC) & Vendor Wire Redirection",
+            "[Audience: Professionals | Difficulty: Advanced | Time: 6 mins] Detect lookalike corporate domains, executive impersonation, and invoice tampering.",
+            """
+            <!--digitalshield-metadata:{"audience":"Professionals","difficulty":"Advanced","duration":6,"objectives":"Detect executive impersonation, lookalike domain spoofing, and unauthorized vendor invoice payment changes.","safetyTips":"Mandate out-of-band phone verification to a pre-established number for all banking coordinate changes."}-->
+            Business Email Compromise (BEC) accounts for billions in global enterprise losses. Attackers register lookalike domains (e.g. acmne-corp.com instead of acme-corp.com) or compromise vendor mailboxes to insert fraudulent banking instructions into pending invoice threads.
+
+            The deceptive email often cites a sudden bank audit, supplier transition, or end-of-quarter rush to circumvent normal dual-authorization protocols.
+
+            Enterprise mitigation: Strictly enforce secondary out-of-band verification via voice call to a known, established contact before updating vendor payment details. Never use contact numbers listed solely on the updated invoice.
+            """,
+            5),
+        new(
+            FraudCategorySeed.PhishingOtpScamsName,
+            "Executive Impersonation and MFA Fatigue Attacks",
+            "[Audience: Professionals | Difficulty: Advanced | Time: 6 mins] Thwart push bombing, C-suite impersonation, and unauthorized credential abuse.",
+            """
+            <!--digitalshield-metadata:{"audience":"Professionals","difficulty":"Advanced","duration":6,"objectives":"Recognize multi-factor authentication push bombing and executive urgency coercion in enterprise communication.","safetyTips":"Report unexpected MFA push prompts immediately to your corporate Information Security Operations Center (SOC)."}-->
+            Adversaries with compromised corporate passwords increasingly deploy MFA Fatigue (Push Bombing)—sending dozens of repeated login authorization prompts in the middle of the night until the employee taps "Approve" out of frustration or confusion.
+
+            Simultaneously, threat actors impersonate C-level leadership on SMS, WhatsApp, or Slack, demanding urgent action (such as purchasing executive gift cards or routing confidential employee payroll files) while claiming to be in an unrecorded board meeting.
+
+            Standard operational defense: Treat repeated unexpected MFA alerts as active credential compromise. Escalate immediately to IT Security and never bypass documented corporate payment authorization chains.
+            """,
+            7)
     ];
 }
 

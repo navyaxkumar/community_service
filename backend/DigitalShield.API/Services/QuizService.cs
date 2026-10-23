@@ -1,4 +1,6 @@
+using DigitalShield.API.Constants;
 using DigitalShield.API.DTOs.Quiz;
+using DigitalShield.API.Helpers;
 using DigitalShield.API.Interfaces.Repositories;
 using DigitalShield.API.Interfaces.Services;
 using DigitalShield.API.Models;
@@ -27,10 +29,23 @@ public class QuizService : IQuizService
         return MapToUserDetail(quiz);
     }
 
-    public async Task<List<QuizResponseDto>> GetPublishedAsync(CancellationToken cancellationToken = default)
+    public async Task<List<QuizResponseDto>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        var quizzes = await _repository.GetAllAsync(cancellationToken);
+        return quizzes.Select(MapToResponse).ToList();
+    }
+
+    public async Task<List<QuizResponseDto>> GetPublishedAsync(string? audience = null, CancellationToken cancellationToken = default)
     {
         var quizzes = await _repository.GetPublishedAsync(cancellationToken);
-        return quizzes.Select(MapToResponse).ToList();
+        var mapped = quizzes.Select(MapToResponse);
+
+        if (!string.IsNullOrWhiteSpace(audience))
+        {
+            mapped = mapped.Where(q => AudienceConstants.MatchesAudience(q.TargetAudience, audience));
+        }
+
+        return mapped.ToList();
     }
 
     public async Task<List<QuizResponseDto>> GetByCategoryAsync(int fraudCategoryId, CancellationToken cancellationToken = default)
@@ -44,10 +59,24 @@ public class QuizService : IQuizService
         ArgumentNullException.ThrowIfNull(request);
         await EnsureCategoryExistsAsync(request.FraudCategoryId, cancellationToken);
 
+        if (request.IsPublished)
+        {
+            ValidatePublishRequirements(request.Questions);
+        }
+
+        var finalDescription = request.Description?.Trim();
+        if (!string.IsNullOrWhiteSpace(request.TargetAudience) || !string.IsNullOrWhiteSpace(request.DifficultyLevel))
+        {
+            var aud = AudienceConstants.Normalize(request.TargetAudience);
+            var diff = ContentMetadataParser.NormalizeDifficulty(request.DifficultyLevel);
+            var cleanDesc = ContentMetadataParser.CleanDescription(finalDescription);
+            finalDescription = $"[Audience: {aud} | Difficulty: {diff}] {cleanDesc}".Trim();
+        }
+
         var quiz = new Quiz
         {
             Title = request.Title.Trim(),
-            Description = request.Description?.Trim(),
+            Description = finalDescription,
             IsPublished = request.IsPublished,
             FraudCategoryId = request.FraudCategoryId,
             CreatedAt = DateTime.UtcNow,
@@ -69,8 +98,23 @@ public class QuizService : IQuizService
         }
 
         await EnsureCategoryExistsAsync(request.FraudCategoryId, cancellationToken);
+
+        if (request.IsPublished)
+        {
+            ValidatePublishRequirements(request.Questions);
+        }
+
+        var finalDescription = request.Description?.Trim();
+        if (!string.IsNullOrWhiteSpace(request.TargetAudience) || !string.IsNullOrWhiteSpace(request.DifficultyLevel))
+        {
+            var aud = AudienceConstants.Normalize(request.TargetAudience);
+            var diff = ContentMetadataParser.NormalizeDifficulty(request.DifficultyLevel);
+            var cleanDesc = ContentMetadataParser.CleanDescription(finalDescription);
+            finalDescription = $"[Audience: {aud} | Difficulty: {diff}] {cleanDesc}".Trim();
+        }
+
         quiz.Title = request.Title.Trim();
-        quiz.Description = request.Description?.Trim();
+        quiz.Description = finalDescription;
         quiz.IsPublished = request.IsPublished;
         quiz.FraudCategoryId = request.FraudCategoryId;
         quiz.UpdatedAt = DateTime.UtcNow;
@@ -90,6 +134,44 @@ public class QuizService : IQuizService
         return quiz is null ? null : MapToManagementDetail(quiz);
     }
 
+    public async Task<QuizResponseDto?> SetPublishStatusAsync(int id, bool isPublished, CancellationToken cancellationToken = default)
+    {
+        var quiz = await _repository.GetByIdWithDetailsAsync(id, cancellationToken);
+        if (quiz is null)
+        {
+            return null;
+        }
+
+        if (isPublished)
+        {
+            ValidatePublishRequirements(quiz.Questions.Select(MapToCreateDto).ToList());
+        }
+
+        quiz.IsPublished = isPublished;
+        quiz.UpdatedAt = DateTime.UtcNow;
+
+        await _repository.UpdateAsync(quiz, cancellationToken);
+        return MapToResponse(quiz);
+    }
+
+    public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var quiz = await _repository.GetByIdAsync(id, cancellationToken);
+        if (quiz is null)
+        {
+            return false;
+        }
+
+        var hasAttempts = await _repository.HasQuizAttemptsAsync(id, cancellationToken);
+        if (hasAttempts)
+        {
+            throw new InvalidOperationException("Cannot delete quiz with existing user attempts. Unpublish or archive it instead.");
+        }
+
+        await _repository.DeleteAsync(quiz, cancellationToken);
+        return true;
+    }
+
     private async Task EnsureCategoryExistsAsync(int? categoryId, CancellationToken cancellationToken)
     {
         if (categoryId.HasValue && await _categoryRepository.GetByIdAsync(categoryId.Value, cancellationToken) is null)
@@ -98,16 +180,59 @@ public class QuizService : IQuizService
         }
     }
 
-    private static QuizQuestion MapToEntity(CreateQuizQuestionDto request)
+    private static void ValidatePublishRequirements(List<CreateQuizQuestionDto> questions)
+    {
+        if (questions == null || questions.Count == 0)
+        {
+            throw new InvalidOperationException("Cannot publish a quiz with no questions. Please add at least one question.");
+        }
+
+        foreach (var question in questions)
+        {
+            if (string.IsNullOrWhiteSpace(question.QuestionText))
+            {
+                throw new InvalidOperationException("Every question in a published quiz must have non-empty question text.");
+            }
+
+            if (question.Options == null || question.Options.Count < 2)
+            {
+                throw new InvalidOperationException($"Question '{question.QuestionText}' must contain at least two answer options.");
+            }
+
+            var hasCorrect = question.Options.Any(o => o.IsCorrect);
+            if (!hasCorrect)
+            {
+                throw new InvalidOperationException($"Question '{question.QuestionText}' must have at least one correct answer option marked.");
+            }
+        }
+    }
+
+    private static QuizQuestion MapToEntity(CreateQuizQuestionDto dto)
     {
         return new QuizQuestion
         {
-            QuestionText = request.QuestionText.Trim(),
-            Explanation = request.Explanation?.Trim(),
-            Order = request.Order,
-            Options = request.Options.Select(option => new QuizOption
+            QuestionText = dto.QuestionText.Trim(),
+            Explanation = dto.Explanation?.Trim(),
+            Order = dto.Order,
+            Options = dto.Options.Select(optionDto => new QuizOption
             {
-                OptionText = option.OptionText.Trim(),
+                OptionText = optionDto.OptionText.Trim(),
+                IsCorrect = optionDto.IsCorrect,
+                Order = optionDto.Order
+            }).ToList()
+        };
+    }
+
+    private static CreateQuizQuestionDto MapToCreateDto(QuizQuestion question)
+    {
+        return new CreateQuizQuestionDto
+        {
+            QuestionText = question.QuestionText,
+            Explanation = question.Explanation,
+            Order = question.Order,
+            Options = question.Options.Select(option => new CreateQuizOptionDto
+            {
+                OptionText = option.OptionText,
                 IsCorrect = option.IsCorrect,
                 Order = option.Order
             }).ToList()
@@ -116,29 +241,39 @@ public class QuizService : IQuizService
 
     private static QuizResponseDto MapToResponse(Quiz quiz)
     {
+        var meta = ContentMetadataParser.Parse(quiz.Description, quiz.Description, quiz.Title);
+        var cleanDesc = ContentMetadataParser.CleanDescription(quiz.Description);
+
         return new QuizResponseDto
         {
             Id = quiz.Id,
             Title = quiz.Title,
-            Description = quiz.Description,
+            Description = string.IsNullOrWhiteSpace(cleanDesc) ? quiz.Description : cleanDesc,
             IsPublished = quiz.IsPublished,
             FraudCategoryId = quiz.FraudCategoryId,
             CreatedAt = quiz.CreatedAt,
-            UpdatedAt = quiz.UpdatedAt
+            UpdatedAt = quiz.UpdatedAt,
+            TargetAudience = meta.TargetAudience,
+            DifficultyLevel = meta.DifficultyLevel
         };
     }
 
     private static QuizDetailDto MapToUserDetail(Quiz quiz)
     {
+        var meta = ContentMetadataParser.Parse(quiz.Description, quiz.Description, quiz.Title);
+        var cleanDesc = ContentMetadataParser.CleanDescription(quiz.Description);
+
         return new QuizDetailDto
         {
             Id = quiz.Id,
             Title = quiz.Title,
-            Description = quiz.Description,
+            Description = string.IsNullOrWhiteSpace(cleanDesc) ? quiz.Description : cleanDesc,
             IsPublished = quiz.IsPublished,
             FraudCategoryId = quiz.FraudCategoryId,
             CreatedAt = quiz.CreatedAt,
             UpdatedAt = quiz.UpdatedAt,
+            TargetAudience = meta.TargetAudience,
+            DifficultyLevel = meta.DifficultyLevel,
             Questions = quiz.Questions.OrderBy(question => question.Order).Select(question => new QuizQuestionForUserDto
             {
                 Id = question.Id,
@@ -157,15 +292,20 @@ public class QuizService : IQuizService
 
     private static QuizManagementDetailDto MapToManagementDetail(Quiz quiz)
     {
+        var meta = ContentMetadataParser.Parse(quiz.Description, quiz.Description, quiz.Title);
+        var cleanDesc = ContentMetadataParser.CleanDescription(quiz.Description);
+
         return new QuizManagementDetailDto
         {
             Id = quiz.Id,
             Title = quiz.Title,
-            Description = quiz.Description,
+            Description = string.IsNullOrWhiteSpace(cleanDesc) ? quiz.Description : cleanDesc,
             IsPublished = quiz.IsPublished,
             FraudCategoryId = quiz.FraudCategoryId,
             CreatedAt = quiz.CreatedAt,
             UpdatedAt = quiz.UpdatedAt,
+            TargetAudience = meta.TargetAudience,
+            DifficultyLevel = meta.DifficultyLevel,
             Questions = quiz.Questions.OrderBy(question => question.Order).Select(question => new QuizQuestionDto
             {
                 Id = question.Id,

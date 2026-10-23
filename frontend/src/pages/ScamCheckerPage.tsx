@@ -8,22 +8,34 @@ import { ErrorMessage } from '../components/common/ErrorMessage';
 
 const EXAMPLE_SAMPLES = [
   {
-    title: 'Bank Account Suspension SMS',
-    content: 'URGENT: Your State Bank account has been temporarily locked due to irregular activity. Restore access immediately to avoid permanent closure: http://sbi-login-verify.secure-portal.com',
+    title: 'Bank KYC Threat (Phishing)',
+    content: 'URGENT: Your State Bank account has been temporarily locked due to irregular activity. Restore access immediately to avoid permanent closure: http://sbi-login-verify.com',
     type: 'Message',
     senderKnown: false,
   },
   {
-    title: 'Postal Delivery Fee Notification',
-    content: 'Package delivery #IN-90821 cannot proceed. An unpaid parcel clearance fee of Rs 49 is pending. Confirm payment details today at http://bit.ly/del-track-post or package will be returned to sender.',
+    title: 'AnyDesk Remote Hijack',
+    content: 'Customer care refund desk: Please install AnyDesk on your mobile phone and share the 9-digit code so we can process your pending refund.',
     type: 'Message',
     senderKnown: false,
   },
   {
-    title: 'Executive Urgency Email',
-    content: 'Are you at your desk? I am in a board meeting and need you to purchase 5 Apple gift cards immediately for a client presentation. Email the redemption codes back to me right away.',
+    title: 'Task Job & Deposit Trap',
+    content: 'Part-time job offer! Earn Rs 5000 per day by liking YouTube videos and rating hotels. Pay Rs 500 registration fee to start today.',
     type: 'Message',
     senderKnown: false,
+  },
+  {
+    title: 'QR Code UPI Scam',
+    content: 'You have received a cashback prize of Rs 2,500. Scan this QR code and enter your UPI PIN to claim money into your bank.',
+    type: 'Message',
+    senderKnown: false,
+  },
+  {
+    title: 'Educational Advisory (Benign)',
+    content: 'Remember that your bank will never ask for your password or OTP. Stay vigilant against phishing.',
+    type: 'Message',
+    senderKnown: true,
   },
 ];
 
@@ -105,7 +117,15 @@ export const ScamCheckerPage: React.FC = () => {
 
   const getRiskBadge = (level: string) => {
     const norm = level.toLowerCase();
-    if (norm === 'high' || norm === 'critical') {
+    if (norm === 'critical') {
+      return (
+        <span className="px-3 py-1 bg-purple-100 text-purple-900 border border-purple-300 rounded-full text-xs font-semibold flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-purple-700" />
+          Critical Threat &bull; Active Phishing / Multi-Vector Attack
+        </span>
+      );
+    }
+    if (norm === 'high') {
       return (
         <span className="px-3 py-1 bg-red-100 text-red-900 border border-red-300 rounded-full text-xs font-semibold flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-red-600" />
@@ -113,11 +133,19 @@ export const ScamCheckerPage: React.FC = () => {
         </span>
       );
     }
-    if (norm === 'medium' || norm === 'moderate') {
+    if (norm === 'medium' || norm === 'suspicious' || norm === 'moderate') {
       return (
         <span className="px-3 py-1 bg-amber-100 text-amber-900 border border-amber-300 rounded-full text-xs font-semibold flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-amber-600" />
           Medium Risk &bull; Caution Advised
+        </span>
+      );
+    }
+    if (norm === 'unabletodetermine' || norm === 'inconclusive') {
+      return (
+        <span className="px-3 py-1 bg-gray-100 text-gray-800 border border-gray-300 rounded-full text-xs font-semibold flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-gray-500" />
+          Inconclusive &bull; Insufficient Input
         </span>
       );
     }
@@ -348,6 +376,24 @@ export const ScamCheckerPage: React.FC = () => {
             </div>
           </div>
 
+          {/* Primary Assessment Reason */}
+          {analysisResult.riskReason && (
+            <div className="p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-xl text-xs text-[#191919] space-y-1">
+              <span className="font-semibold text-amber-900 uppercase tracking-wider text-[10px] block">
+                Primary Assessment Rationale
+              </span>
+              <p className="text-[#191919]/80 leading-relaxed font-sans">{analysisResult.riskReason}</p>
+            </div>
+          )}
+
+          {/* Engine Intelligence Badge */}
+          <div className="flex items-center gap-2 text-[11px] text-[#191919]/60 px-1">
+            <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+            <span>Intelligence Provider: <strong>{analysisResult.threatIntelligenceSource || 'Local Threat Engine'}</strong></span>
+            <span className="text-gray-300">&bull;</span>
+            <span>Deterministic heuristic analysis (zero personal data transmitted externally)</span>
+          </div>
+
           {/* Indicators Section */}
           <div>
             <h4 className="text-xs uppercase tracking-wider font-semibold text-[#191919]/60 mb-3">
@@ -360,14 +406,39 @@ export const ScamCheckerPage: React.FC = () => {
             ) : (
               <div className="space-y-3">
                 {analysisResult.indicators.map((ind, i) => (
-                  <div key={i} className="p-4 bg-[#F4F3F3] rounded-xl border border-gray-100 text-xs space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-[#191919]">{ind.title}</span>
-                      <span className="font-mono text-[10px] bg-white px-2 py-0.5 rounded border border-gray-200 text-[#191919]/70">
+                  <div key={i} className="p-4 bg-[#F4F3F3] rounded-xl border border-gray-100 text-xs space-y-2">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-[#191919]">{ind.title}</span>
+                        {ind.severity && (
+                          <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full border ${
+                            ind.severity.toLowerCase() === 'critical' ? 'bg-purple-50 text-purple-800 border-purple-200' :
+                            ind.severity.toLowerCase() === 'high' ? 'bg-red-50 text-red-800 border-red-200' :
+                            ind.severity.toLowerCase() === 'medium' ? 'bg-amber-50 text-amber-800 border-amber-200' :
+                            'bg-gray-100 text-gray-700 border-gray-200'
+                          }`}>
+                            {ind.severity}
+                          </span>
+                        )}
+                        {ind.category && (
+                          <span className="text-[10px] text-[#191919]/50 font-medium">
+                            [{ind.category}]
+                          </span>
+                        )}
+                      </div>
+                      <span className="font-mono text-[10px] bg-white px-2 py-0.5 rounded border border-gray-200 text-[#191919]/70 shrink-0">
                         Weight +{ind.score}
                       </span>
                     </div>
                     <p className="text-[#191919]/70 leading-relaxed">{ind.explanation}</p>
+                    {ind.evidence && (
+                      <div className="p-2.5 bg-white rounded-lg border border-gray-200 text-[11px] font-mono text-[#191919]/90 break-all">
+                        <span className="font-sans font-semibold text-[10px] uppercase text-[#191919]/50 block mb-0.5">
+                          Matched Trigger Evidence:
+                        </span>
+                        "{ind.evidence}"
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

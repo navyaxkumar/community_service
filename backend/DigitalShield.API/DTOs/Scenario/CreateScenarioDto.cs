@@ -8,4 +8,8 @@ public class CreateScenarioDto
     public string CorrectAction { get; set; } = string.Empty;
     public bool IsPublished { get; set; }
     public int? FraudCategoryId { get; set; }
+
+    public string? TargetAudience { get; set; }
+    public string? DifficultyLevel { get; set; }
+    public string? SafetyTips { get; set; }
 }

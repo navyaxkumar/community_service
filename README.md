@@ -164,7 +164,7 @@ See [docs/testing/README.md](docs/testing/README.md) for testing strategy, datab
 - Quiz scoring is calculated server-side.
 - Error responses use safe Problem Details.
 - Unexpected exception logs avoid logging exception messages from the application handler.
-- CORS is not configured as unrestricted wildcard behavior.
+- CORS is not configured as an unrestricted wildcard.
 - HTTPS redirection remains enabled.
 
 ## Known Deferred Work

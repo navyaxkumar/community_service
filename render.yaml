@@ -10,9 +10,11 @@ services:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
       - key: ConnectionStrings__DefaultConnection
-        sync: false
+        fromDatabase:
+          name: digitalshield-db
+          property: connectionString
       - key: Jwt__SecretKey
-        sync: false
+        generateValue: true
       - key: Jwt__Issuer
         value: DigitalShield
       - key: Jwt__Audience
@@ -23,3 +25,11 @@ services:
         sync: false
       - key: DatabaseSeeding__Enabled
         value: "true"
+      - key: DatabaseMigrations__ApplyOnStartup
+        value: "true"
+
+databases:
+  - name: digitalshield-db
+    databaseName: digitalshield
+    user: digitalshield
+    plan: free

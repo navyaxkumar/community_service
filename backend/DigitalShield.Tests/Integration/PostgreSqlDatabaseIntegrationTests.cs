@@ -13,16 +13,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DigitalShield.Tests.Integration;
 
-[Collection(SqlServerIntegrationCollection.Name)]
+[Collection(PostgreSqlIntegrationCollection.Name)]
 [Trait("Category", "Integration")]
-public sealed class SqlServerDatabaseIntegrationTests
+public sealed class PostgreSqlDatabaseIntegrationTests
 {
     private static readonly string[] ExpectedMigrations =
     [
-        "20260920130618_InitialCreate",
-        "20260920131521_AddInitialDomainModels",
-        "20260920150244_RefineDatabaseSchema",
-        "20260928181716_AddDatabasePerformanceIndexes"
+        "20261121065254_InitialPostgresSchema"
     ];
 
     private static readonly string[] ExpectedTables =
@@ -39,19 +36,19 @@ public sealed class SqlServerDatabaseIntegrationTests
         "Badges"
     ];
 
-    private readonly SqlServerIntegrationFixture _fixture;
+    private readonly PostgreSqlIntegrationFixture _fixture;
 
-    public SqlServerDatabaseIntegrationTests(SqlServerIntegrationFixture fixture)
+    public PostgreSqlDatabaseIntegrationTests(PostgreSqlIntegrationFixture fixture)
     {
         _fixture = fixture;
     }
 
-    [SqlServerIntegrationFact]
-    public async Task Migrations_CreateExpectedSqlServerSchemaAndHistory()
+    [PostgreSqlIntegrationFact]
+    public async Task Migrations_CreateExpectedPostgreSqlSchemaAndHistory()
     {
         await using var context = _fixture.CreateContext();
 
-        Assert.Equal("Microsoft.EntityFrameworkCore.SqlServer", context.Database.ProviderName);
+        Assert.Equal("Npgsql.EntityFrameworkCore.PostgreSQL", context.Database.ProviderName);
         Assert.True(await context.Database.CanConnectAsync());
         Assert.Equal(ExpectedMigrations, (await context.Database.GetAppliedMigrationsAsync()).ToArray());
         Assert.Empty(await context.Database.GetPendingMigrationsAsync());
@@ -75,7 +72,7 @@ public sealed class SqlServerDatabaseIntegrationTests
         Assert.All(ExpectedTables, tableName => Assert.Contains(tableName, tableNames));
     }
 
-    [SqlServerIntegrationFact]
+    [PostgreSqlIntegrationFact]
     public async Task Seeder_IsIdempotentPreservesExistingDataAndDoesNotCreateDevelopmentUsers()
     {
         await using var context = _fixture.CreateContext();
@@ -95,7 +92,7 @@ public sealed class SqlServerDatabaseIntegrationTests
         Assert.Empty(await context.Users.ToListAsync());
     }
 
-    [SqlServerIntegrationFact]
+    [PostgreSqlIntegrationFact]
     public async Task Authentication_PersistsNormalizedHashedUsersAndRejectsDuplicateOrInactiveLogin()
     {
         await using var context = _fixture.CreateContext();
@@ -131,7 +128,7 @@ public sealed class SqlServerDatabaseIntegrationTests
         await Assert.ThrowsAsync<AuthenticationException>(() => service.LoginAsync(new LoginRequestDto { Email = email, Password = password }));
     }
 
-    [SqlServerIntegrationFact]
+    [PostgreSqlIntegrationFact]
     public async Task PublishedContentAndQuizDetails_UseRelationalDataWithoutLeakingAnswers()
     {
         await using var context = _fixture.CreateContext();
@@ -173,7 +170,7 @@ public sealed class SqlServerDatabaseIntegrationTests
         Assert.True(await context.QuizOptions.AnyAsync(option => option.IsCorrect));
     }
 
-    [SqlServerIntegrationFact]
+    [PostgreSqlIntegrationFact]
     public async Task QuizAttempts_UseStoredAnswersCalculateScoresAndEnforceOwnership()
     {
         await using var context = _fixture.CreateContext();
@@ -214,7 +211,7 @@ public sealed class SqlServerDatabaseIntegrationTests
             new TestCurrentUserService(user.Id + 1, Roles.User)).GetByIdAsync(storedAttempt.Id));
     }
 
-    [SqlServerIntegrationFact]
+    [PostgreSqlIntegrationFact]
     public async Task Progress_UpdatesCompletionPreventsDuplicatesAndEnforcesOwnership()
     {
         await using var context = _fixture.CreateContext();
@@ -258,8 +255,8 @@ public sealed class SqlServerDatabaseIntegrationTests
             new TestCurrentUserService(user.Id + 1, Roles.User)).GetByUserAsync(user.Id));
     }
 
-    [SqlServerIntegrationFact]
-    public async Task SqlServerConstraints_RejectDuplicateEmailDuplicateProgressAndInvalidForeignKeys()
+    [PostgreSqlIntegrationFact]
+    public async Task PostgreSqlConstraints_RejectDuplicateEmailDuplicateProgressAndInvalidForeignKeys()
     {
         await using var context = _fixture.CreateContext();
         await using var transaction = await context.Database.BeginTransactionAsync();
@@ -291,7 +288,7 @@ public sealed class SqlServerDatabaseIntegrationTests
         await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
     }
 
-    [SqlServerIntegrationFact]
+    [PostgreSqlIntegrationFact]
     public async Task DeleteBehaviors_CascadeQuizChildrenSetCategoryNullAndRestrictUsers()
     {
         await using var context = _fixture.CreateContext();
@@ -336,7 +333,7 @@ public sealed class SqlServerDatabaseIntegrationTests
         await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
     }
 
-    [SqlServerIntegrationFact]
+    [PostgreSqlIntegrationFact]
     public async Task Repositories_FilterOrderLoadRelationshipsAndUseNoTracking()
     {
         await using var context = _fixture.CreateContext();

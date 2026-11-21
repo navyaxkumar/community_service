@@ -11,28 +11,28 @@ using Microsoft.Extensions.Options;
 namespace DigitalShield.Tests.Integration;
 
 [CollectionDefinition(Name, DisableParallelization = true)]
-public sealed class SqlServerIntegrationCollection : ICollectionFixture<SqlServerIntegrationFixture>
+public sealed class PostgreSqlIntegrationCollection : ICollectionFixture<PostgreSqlIntegrationFixture>
 {
-    public const string Name = "SQL Server integration";
+    public const string Name = "PostgreSQL integration";
 }
 
-public sealed class SqlServerIntegrationFixture : IAsyncLifetime
+public sealed class PostgreSqlIntegrationFixture : IAsyncLifetime
 {
     private readonly DbContextOptions<ApplicationDbContext>? _options;
 
-    public SqlServerIntegrationFixture()
+    public PostgreSqlIntegrationFixture()
     {
-        if (SqlServerIntegrationEnvironment.IsAvailable)
+        if (PostgreSqlIntegrationEnvironment.IsAvailable)
         {
             _options = new DbContextOptionsBuilder<ApplicationDbContext>()
-                .UseSqlServer(SqlServerIntegrationEnvironment.ConnectionString)
+                .UseNpgsql(PostgreSqlIntegrationEnvironment.ConnectionString)
                 .Options;
         }
     }
 
     public async Task InitializeAsync()
     {
-        if (!SqlServerIntegrationEnvironment.IsAvailable)
+        if (!PostgreSqlIntegrationEnvironment.IsAvailable)
         {
             return;
         }
@@ -45,7 +45,7 @@ public sealed class SqlServerIntegrationFixture : IAsyncLifetime
     public Task DisposeAsync() => Task.CompletedTask;
 
     public ApplicationDbContext CreateContext() => new(_options
-        ?? throw new InvalidOperationException(SqlServerIntegrationEnvironment.BlockingReason));
+        ?? throw new InvalidOperationException(PostgreSqlIntegrationEnvironment.BlockingReason));
 
     public DatabaseSeeder CreateSeeder(ApplicationDbContext context)
     {

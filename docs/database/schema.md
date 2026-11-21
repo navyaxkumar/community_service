@@ -2,13 +2,16 @@
 
 This document describes the schema represented by the C# models, `ApplicationDbContext`, EF Core migrations, and model snapshot.
 
-Live SQL Server verification is currently blocked by the local SQL Server environment. This inventory is source/model verified, not live-database verified.
+The current deployment provider is PostgreSQL. The generated migration under
+`backend/DigitalShield.API/Migrations` is authoritative for PostgreSQL column
+types and constraints. The SQL Server-specific type names and migration notes
+in the historical inventory below predate that provider change.
 
 ## Timestamp Policy
 
 Server-side timestamps are intended to be UTC.
 
-- Database defaults use `GETUTCDATE()` for creation/start timestamps.
+- Database defaults use `CURRENT_TIMESTAMP` for creation/start timestamps.
 - Application services use `DateTime.UtcNow` for update/completion timestamps.
 - `UpdatedAt` and `CompletedAt` are nullable where a record may not yet be updated or completed.
 

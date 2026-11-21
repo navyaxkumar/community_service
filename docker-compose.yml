@@ -1,4 +1,14 @@
-# Placeholder for future Docker Compose configuration.
-# Docker services will be defined in a later phase.
-version: "3.8"
-services: {}
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: DigitalShieldDb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - digitalshield-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  digitalshield-postgres-data:

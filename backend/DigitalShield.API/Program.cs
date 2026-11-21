@@ -23,6 +23,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Models;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,12 +44,13 @@ if (string.IsNullOrWhiteSpace(connectionString))
         throw new InvalidOperationException("Database connection configuration is missing.");
     }
 
-    connectionString = "Server=(localdb)\\MSSQLLocalDB;Database=DigitalShieldDb;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true;";
+    connectionString = "Host=localhost;Database=DigitalShieldDb;Username=postgres;Password=postgres";
     builder.Configuration["ConnectionStrings:DefaultConnection"] = connectionString;
 }
 
+connectionString = NormalizePostgreSqlConnectionString(connectionString);
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseNpgsql(connectionString));
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddScoped<IDatabaseSeeder, DatabaseSeeder>();
@@ -192,6 +194,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+if (app.Configuration.GetValue<bool>("DatabaseMigrations:ApplyOnStartup"))
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await dbContext.Database.MigrateAsync();
+}
+
 if (app.Configuration.GetValue<bool>("DatabaseSeeding:Enabled"))
 {
     await SeedDatabaseAsync(app);
@@ -214,4 +223,32 @@ static async Task SeedDatabaseAsync(WebApplication app)
     await using var scope = app.Services.CreateAsyncScope();
     var seeder = scope.ServiceProvider.GetRequiredService<IDatabaseSeeder>();
     await seeder.SeedAsync();
+}
+
+static string NormalizePostgreSqlConnectionString(string connectionString)
+{
+    if (!connectionString.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) &&
+        !connectionString.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
+    {
+        return connectionString;
+    }
+
+    var uri = new Uri(connectionString);
+    var credentials = uri.UserInfo.Split(':', 2);
+    if (credentials.Length != 2)
+    {
+        throw new InvalidOperationException("The PostgreSQL database URL must include a username and password.");
+    }
+
+    var builder = new NpgsqlConnectionStringBuilder
+    {
+        Host = uri.Host,
+        Port = uri.IsDefaultPort ? 5432 : uri.Port,
+        Database = Uri.UnescapeDataString(uri.AbsolutePath.TrimStart('/')),
+        Username = Uri.UnescapeDataString(credentials[0]),
+        Password = Uri.UnescapeDataString(credentials[1]),
+        SslMode = SslMode.Require
+    };
+
+    return builder.ConnectionString;
 }

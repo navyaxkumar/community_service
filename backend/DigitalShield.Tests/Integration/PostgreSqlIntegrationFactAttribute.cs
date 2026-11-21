@@ -1,20 +1,20 @@
-using Microsoft.Data.SqlClient;
+using Npgsql;
 
 namespace DigitalShield.Tests.Integration;
 
 [AttributeUsage(AttributeTargets.Method)]
-public sealed class SqlServerIntegrationFactAttribute : FactAttribute
+public sealed class PostgreSqlIntegrationFactAttribute : FactAttribute
 {
-    public SqlServerIntegrationFactAttribute()
+    public PostgreSqlIntegrationFactAttribute()
     {
-        if (!SqlServerIntegrationEnvironment.IsAvailable)
+        if (!PostgreSqlIntegrationEnvironment.IsAvailable)
         {
-            Skip = SqlServerIntegrationEnvironment.BlockingReason;
+            Skip = PostgreSqlIntegrationEnvironment.BlockingReason;
         }
     }
 }
 
-internal static class SqlServerIntegrationEnvironment
+internal static class PostgreSqlIntegrationEnvironment
 {
     public const string ConnectionStringEnvironmentVariable = "ConnectionStrings__IntegrationTest";
     private const string DedicatedDatabasePrefix = "DigitalShield_Integration";
@@ -31,40 +31,39 @@ internal static class SqlServerIntegrationEnvironment
         if (string.IsNullOrWhiteSpace(connectionString))
         {
             return IntegrationAvailability.Blocked(
-                $"SQL Server integration is blocked: set the {ConnectionStringEnvironmentVariable} environment variable to a dedicated test database connection.");
+                $"PostgreSQL integration is blocked: set the {ConnectionStringEnvironmentVariable} environment variable to a dedicated test database connection.");
         }
 
-        SqlConnectionStringBuilder builder;
+        NpgsqlConnectionStringBuilder builder;
         try
         {
-            builder = new SqlConnectionStringBuilder(connectionString);
+            builder = new NpgsqlConnectionStringBuilder(connectionString);
         }
         catch (ArgumentException)
         {
-            return IntegrationAvailability.Blocked("SQL Server integration is blocked: the dedicated test database connection string is invalid.");
+            return IntegrationAvailability.Blocked("PostgreSQL integration is blocked: the dedicated test database connection string is invalid.");
         }
 
-        if (string.IsNullOrWhiteSpace(builder.InitialCatalog) ||
-            !builder.InitialCatalog.StartsWith(DedicatedDatabasePrefix, StringComparison.OrdinalIgnoreCase))
+        if (string.IsNullOrWhiteSpace(builder.Database) ||
+            !builder.Database.StartsWith(DedicatedDatabasePrefix, StringComparison.OrdinalIgnoreCase))
         {
             return IntegrationAvailability.Blocked(
-                $"SQL Server integration is blocked: the configured database name must start with {DedicatedDatabasePrefix}.");
+                $"PostgreSQL integration is blocked: the configured database name must start with {DedicatedDatabasePrefix}.");
         }
 
         try
         {
-            using var connection = new SqlConnection(connectionString);
+            using var connection = new NpgsqlConnection(connectionString);
             connection.Open();
             return IntegrationAvailability.Available(connectionString);
         }
-        catch (SqlException exception)
+        catch (NpgsqlException exception)
         {
-            return IntegrationAvailability.Blocked(
-                $"SQL Server integration is blocked: the dedicated test database could not be opened (SQL error {exception.Number}).");
+            return IntegrationAvailability.Blocked($"PostgreSQL integration is blocked: the dedicated test database could not be opened ({exception.SqlState ?? "connection error"}).");
         }
         catch (InvalidOperationException)
         {
-            return IntegrationAvailability.Blocked("SQL Server integration is blocked: the dedicated test database connection could not be opened.");
+            return IntegrationAvailability.Blocked("PostgreSQL integration is blocked: the dedicated test database connection could not be opened.");
         }
     }
 

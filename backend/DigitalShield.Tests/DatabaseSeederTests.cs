@@ -468,7 +468,7 @@ public class DatabaseSeederTests
     [Fact]
     public async Task SeedAsync_UnavailableDatabase_ThrowsClearFailure()
     {
-        await using var context = CreateUnavailableSqlServerContext();
+        await using var context = CreateUnavailablePostgreSqlContext();
         var seeder = CreateSeeder(context, Environments.Development);
 
         await Assert.ThrowsAnyAsync<Exception>(() => seeder.SeedAsync());
@@ -543,10 +543,10 @@ public class DatabaseSeederTests
         return new ApplicationDbContext(options);
     }
 
-    private static ApplicationDbContext CreateUnavailableSqlServerContext()
+    private static ApplicationDbContext CreateUnavailablePostgreSqlContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseSqlServer("Server=127.0.0.1,1;Database=DigitalShieldSeederUnavailable;Trusted_Connection=True;Connect Timeout=1;TrustServerCertificate=True;Encrypt=False;")
+            .UseNpgsql("Host=127.0.0.1;Port=1;Database=DigitalShieldSeederUnavailable;Username=test;Password=test;Timeout=1;SSL Mode=Disable")
             .Options;
 
         return new ApplicationDbContext(options);

@@ -1,6 +1,21 @@
 # DigitalShield Database
 
-## Supported SQL Server Options
+## Current Deployment: Render PostgreSQL
+
+The API now uses Entity Framework Core with Npgsql. The Render Blueprint in
+`render.yaml` provisions a PostgreSQL database and connects it to the API. The
+API converts Render's PostgreSQL URL to an Npgsql connection string, applies
+EF Core migrations at startup when `DatabaseMigrations:ApplyOnStartup` is
+enabled, and seeds initial reference content when `DatabaseSeeding:Enabled` is
+enabled.
+
+See [render-postgresql.md](render-postgresql.md) for deployment details.
+
+The SQL Server notes below are historical records from before the provider was
+changed for Render deployment. The current schema is defined by the
+PostgreSQL migration under `backend/DigitalShield.API/Migrations`.
+
+## Historical SQL Server Options
 
 DigitalShield uses Entity Framework Core with the SQL Server provider.
 

@@ -47,7 +47,7 @@ public class ApplicationDbContext : DbContext
                 .HasDefaultValue("User");
 
             entity.Property(u => u.CreatedAt)
-                .HasDefaultValueSql("GETUTCDATE()");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             entity.Property(u => u.IsActive)
                 .HasDefaultValue(true);
@@ -79,14 +79,14 @@ public class ApplicationDbContext : DbContext
                 .HasDefaultValue(true);
 
             entity.Property(fc => fc.CreatedAt)
-                .HasDefaultValueSql("GETUTCDATE()");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
         });
 
         modelBuilder.Entity<LearningModule>(entity =>
         {
             entity.ToTable(table =>
             {
-                table.HasCheckConstraint("CK_LearningModules_Order_NonNegative", "[Order] >= 0");
+                table.HasCheckConstraint("CK_LearningModules_Order_NonNegative", "\"Order\" >= 0");
             });
 
             entity.Property(lm => lm.Title)
@@ -100,7 +100,7 @@ public class ApplicationDbContext : DbContext
                 .IsRequired();
 
             entity.Property(lm => lm.CreatedAt)
-                .HasDefaultValueSql("GETUTCDATE()");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             entity.HasIndex(lm => new { lm.FraudCategoryId, lm.Order });
 
@@ -126,7 +126,7 @@ public class ApplicationDbContext : DbContext
                 .IsRequired();
 
             entity.Property(s => s.CreatedAt)
-                .HasDefaultValueSql("GETUTCDATE()");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             entity.HasIndex(s => new { s.FraudCategoryId, s.Title });
 
@@ -146,7 +146,7 @@ public class ApplicationDbContext : DbContext
                 .HasMaxLength(1000);
 
             entity.Property(q => q.CreatedAt)
-                .HasDefaultValueSql("GETUTCDATE()");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             entity.HasIndex(q => new { q.FraudCategoryId, q.Title });
 
@@ -160,7 +160,7 @@ public class ApplicationDbContext : DbContext
         {
             entity.ToTable(table =>
             {
-                table.HasCheckConstraint("CK_QuizQuestions_Order_NonNegative", "[Order] >= 0");
+                table.HasCheckConstraint("CK_QuizQuestions_Order_NonNegative", "\"Order\" >= 0");
             });
 
             entity.Property(qq => qq.QuestionText)
@@ -179,7 +179,7 @@ public class ApplicationDbContext : DbContext
         {
             entity.ToTable(table =>
             {
-                table.HasCheckConstraint("CK_QuizOptions_Order_NonNegative", "[Order] >= 0");
+                table.HasCheckConstraint("CK_QuizOptions_Order_NonNegative", "\"Order\" >= 0");
             });
 
             entity.Property(qo => qo.OptionText)
@@ -195,7 +195,7 @@ public class ApplicationDbContext : DbContext
         {
             entity.ToTable(table =>
             {
-                table.HasCheckConstraint("CK_UserProgress_ProgressPercentage_Range", "[ProgressPercentage] >= 0 AND [ProgressPercentage] <= 100");
+                table.HasCheckConstraint("CK_UserProgress_ProgressPercentage_Range", "\"ProgressPercentage\" >= 0 AND \"ProgressPercentage\" <= 100");
             });
 
             entity.HasIndex(up => new { up.UserId, up.LearningModuleId })
@@ -207,7 +207,7 @@ public class ApplicationDbContext : DbContext
                 .HasDefaultValue(0);
 
             entity.Property(up => up.StartedAt)
-                .HasDefaultValueSql("GETUTCDATE()");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             entity.HasOne(up => up.User)
                 .WithMany(u => u.UserProgress)
@@ -224,13 +224,13 @@ public class ApplicationDbContext : DbContext
         {
             entity.ToTable(table =>
             {
-                table.HasCheckConstraint("CK_QuizAttempts_Score_NonNegative", "[Score] >= 0");
-                table.HasCheckConstraint("CK_QuizAttempts_TotalQuestions_NonNegative", "[TotalQuestions] >= 0");
-                table.HasCheckConstraint("CK_QuizAttempts_Score_NotGreaterThanTotalQuestions", "[Score] <= [TotalQuestions]");
+                table.HasCheckConstraint("CK_QuizAttempts_Score_NonNegative", "\"Score\" >= 0");
+                table.HasCheckConstraint("CK_QuizAttempts_TotalQuestions_NonNegative", "\"TotalQuestions\" >= 0");
+                table.HasCheckConstraint("CK_QuizAttempts_Score_NotGreaterThanTotalQuestions", "\"Score\" <= \"TotalQuestions\"");
             });
 
             entity.Property(qa => qa.StartedAt)
-                .HasDefaultValueSql("GETUTCDATE()");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             entity.Property(qa => qa.TotalQuestions)
                 .HasDefaultValue(0);
@@ -255,7 +255,7 @@ public class ApplicationDbContext : DbContext
         {
             entity.ToTable(table =>
             {
-                table.HasCheckConstraint("CK_Badges_RequiredPoints_NonNegative", "[RequiredPoints] >= 0");
+                table.HasCheckConstraint("CK_Badges_RequiredPoints_NonNegative", "\"RequiredPoints\" >= 0");
             });
 
             entity.Property(b => b.Name)
@@ -269,7 +269,7 @@ public class ApplicationDbContext : DbContext
                 .HasMaxLength(200);
 
             entity.Property(b => b.CreatedAt)
-                .HasDefaultValueSql("GETUTCDATE()");
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             entity.Property(b => b.IsActive)
                 .HasDefaultValue(true);

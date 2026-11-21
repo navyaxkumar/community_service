@@ -13,6 +13,7 @@ import { Badge } from '../types/badge';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { EmptyState } from '../components/common/EmptyState';
+import { CyberBadgeDownload } from '../components/badges/CyberBadgeDownload';
 
 export const DashboardPage: React.FC = () => {
   const { user } = useAuth();
@@ -305,15 +306,21 @@ export const DashboardPage: React.FC = () => {
                 : 'border-dashed border-gray-200 bg-gray-50/50 opacity-60'
             }`}
           >
-            <div className="font-semibold text-[#191919] flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px]">
-                &#10003;
-              </span>
-              <span>Awareness Starter</span>
-            </div>
-            <p className="text-[11px] text-[#191919]/65 mt-1 leading-relaxed">
-              Awarded for completing your first digital-safety learning module.
-            </p>
+            {completedModulesCount > 0 ? (
+              <CyberBadgeDownload />
+            ) : (
+              <>
+                <div className="font-semibold text-[#191919] flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-gray-300 text-gray-700 flex items-center justify-center text-[10px]">
+                    1
+                  </span>
+                  <span>Awareness Starter</span>
+                </div>
+                <p className="text-[11px] text-[#191919]/65 mt-1 leading-relaxed">
+                  Complete your first digital-safety learning module to unlock this badge.
+                </p>
+              </>
+            )}
           </div>
 
           <div className="p-4 rounded-xl border border-dashed border-gray-200 bg-gray-50/50 opacity-60">

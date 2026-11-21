@@ -32,6 +32,15 @@ public class LearningModuleRepository : ILearningModuleRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<List<LearningModule>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.LearningModules
+            .AsNoTracking()
+            .Include(lm => lm.FraudCategory)
+            .OrderBy(lm => lm.Order)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<List<LearningModule>> GetByCategoryAsync(int fraudCategoryId, CancellationToken cancellationToken = default)
     {
         return await _context.LearningModules

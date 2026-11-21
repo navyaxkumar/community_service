@@ -30,6 +30,14 @@ public class BadgeRepository : IBadgeRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<List<Badge>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.Badges
+            .AsNoTracking()
+            .OrderBy(b => b.RequiredPoints)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task AddAsync(Badge badge, CancellationToken cancellationToken = default)
     {
         await _context.Badges.AddAsync(badge, cancellationToken);

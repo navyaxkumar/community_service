@@ -26,6 +26,37 @@ export interface QuizDetail extends Quiz {
   questions: QuizQuestion[];
 }
 
+export interface QuizManagementDetail extends Quiz {
+  questions: Array<{
+    id: number;
+    questionText: string;
+    explanation?: string;
+    order: number;
+    options: Array<QuizOption & { isCorrect: boolean }>;
+  }>;
+}
+
+export interface QuizOptionRequest {
+  optionText: string;
+  isCorrect: boolean;
+  order: number;
+}
+
+export interface QuizQuestionRequest {
+  questionText: string;
+  explanation?: string;
+  order: number;
+  options: QuizOptionRequest[];
+}
+
+export interface SaveQuizRequest {
+  title: string;
+  description?: string;
+  isPublished: boolean;
+  fraudCategoryId?: number;
+  questions: QuizQuestionRequest[];
+}
+
 export interface QuizAnswer {
   questionId: number;
   optionId: number;

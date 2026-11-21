@@ -10,6 +10,10 @@ export const learningService = {
     return api.get<LearningModule[]>('/learning-modules');
   },
 
+  getAllForManagement: async (): Promise<LearningModule[]> => {
+    return api.get<LearningModule[]>('/learning-modules/manage');
+  },
+
   getModuleById: async (id: number): Promise<LearningModule> => {
     return api.get<LearningModule>(`/learning-modules/${id}`);
   },

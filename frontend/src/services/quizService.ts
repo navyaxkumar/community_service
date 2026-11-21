@@ -3,6 +3,8 @@ import {
   Quiz,
   QuizAttempt,
   QuizDetail,
+  QuizManagementDetail,
+  SaveQuizRequest,
   SubmitQuizAttemptRequest,
 } from '../types/quiz';
 
@@ -11,8 +13,24 @@ export const quizService = {
     return api.get<Quiz[]>('/quizzes');
   },
 
+  getAllForManagement: async (): Promise<Quiz[]> => {
+    return api.get<Quiz[]>('/quizzes/manage');
+  },
+
+  getManagementDetails: async (id: number): Promise<QuizManagementDetail> => {
+    return api.get<QuizManagementDetail>(`/quizzes/manage/${id}`);
+  },
+
   getQuizById: async (id: number): Promise<QuizDetail> => {
     return api.get<QuizDetail>(`/quizzes/${id}`);
+  },
+
+  createQuiz: async (quiz: SaveQuizRequest): Promise<QuizDetail> => {
+    return api.post<QuizDetail>('/quizzes', quiz);
+  },
+
+  updateQuiz: async (id: number, quiz: SaveQuizRequest): Promise<QuizDetail> => {
+    return api.put<QuizDetail>(`/quizzes/${id}`, quiz);
   },
 
   getQuizzesByCategory: async (categoryId: number): Promise<Quiz[]> => {

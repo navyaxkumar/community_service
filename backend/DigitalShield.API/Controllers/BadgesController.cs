@@ -24,6 +24,13 @@ public class BadgesController : ControllerBase
         return Ok(await _service.GetActiveAsync(cancellationToken));
     }
 
+    [HttpGet("manage")]
+    [Authorize(Roles = Roles.Admin)]
+    public async Task<IActionResult> GetAllForManagement(CancellationToken cancellationToken)
+    {
+        return Ok(await _service.GetAllAsync(cancellationToken));
+    }
+
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
     {

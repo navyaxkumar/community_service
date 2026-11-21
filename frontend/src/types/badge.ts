@@ -18,3 +18,20 @@ export interface Scenario {
   fraudCategoryId?: number;
   createdAt: string;
 }
+
+export interface SaveScenarioRequest {
+  title: string;
+  description?: string;
+  situation: string;
+  correctAction: string;
+  isPublished: boolean;
+  fraudCategoryId?: number;
+}
+
+export interface SaveBadgeRequest {
+  name: string;
+  description?: string;
+  icon?: string;
+  requiredPoints: number;
+  isActive: boolean;
+}

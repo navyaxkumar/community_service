@@ -42,6 +42,15 @@ public class QuizRepository : IQuizRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<List<Quiz>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.Quizzes
+            .AsNoTracking()
+            .Include(q => q.FraudCategory)
+            .OrderBy(q => q.Title)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<List<Quiz>> GetByCategoryAsync(int fraudCategoryId, CancellationToken cancellationToken = default)
     {
         return await _context.Quizzes

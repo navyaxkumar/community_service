@@ -28,6 +28,12 @@ public class LearningModuleService : ILearningModuleService
         return modules.Select(MapToResponse).ToList();
     }
 
+    public async Task<List<LearningModuleResponseDto>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        var modules = await _repository.GetAllAsync(cancellationToken);
+        return modules.Select(MapToResponse).ToList();
+    }
+
     public async Task<List<LearningModuleResponseDto>> GetByCategoryAsync(int fraudCategoryId, CancellationToken cancellationToken = default)
     {
         var modules = await _repository.GetByCategoryAsync(fraudCategoryId, cancellationToken);

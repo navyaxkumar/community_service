@@ -33,6 +33,12 @@ public class QuizService : IQuizService
         return quizzes.Select(MapToResponse).ToList();
     }
 
+    public async Task<List<QuizResponseDto>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        var quizzes = await _repository.GetAllAsync(cancellationToken);
+        return quizzes.Select(MapToResponse).ToList();
+    }
+
     public async Task<List<QuizResponseDto>> GetByCategoryAsync(int fraudCategoryId, CancellationToken cancellationToken = default)
     {
         var quizzes = await _repository.GetByCategoryAsync(fraudCategoryId, cancellationToken);

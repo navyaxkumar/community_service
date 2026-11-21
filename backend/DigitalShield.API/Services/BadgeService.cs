@@ -26,6 +26,12 @@ public class BadgeService : IBadgeService
         return badges.Select(MapToResponse).ToList();
     }
 
+    public async Task<List<BadgeResponseDto>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        var badges = await _repository.GetAllAsync(cancellationToken);
+        return badges.Select(MapToResponse).ToList();
+    }
+
     public async Task<BadgeResponseDto> CreateAsync(CreateBadgeDto request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);

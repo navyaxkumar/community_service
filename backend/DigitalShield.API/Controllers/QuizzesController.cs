@@ -24,6 +24,21 @@ public class QuizzesController : ControllerBase
         return Ok(await _service.GetPublishedAsync(cancellationToken));
     }
 
+    [HttpGet("manage")]
+    [Authorize(Roles = Roles.Admin)]
+    public async Task<IActionResult> GetAllForManagement(CancellationToken cancellationToken)
+    {
+        return Ok(await _service.GetAllAsync(cancellationToken));
+    }
+
+    [HttpGet("manage/{id:int}")]
+    [Authorize(Roles = Roles.Admin)]
+    public async Task<IActionResult> GetManagementDetails(int id, CancellationToken cancellationToken)
+    {
+        var quiz = await _service.GetManagementDetailsAsync(id, cancellationToken);
+        return quiz is null ? NotFound() : Ok(quiz);
+    }
+
     [HttpGet("category/{categoryId:int}")]
     [Authorize]
     public async Task<IActionResult> GetByCategory(int categoryId, CancellationToken cancellationToken)

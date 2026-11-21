@@ -22,6 +22,7 @@ import { DashboardPage } from '../pages/DashboardPage';
 import { ProfilePage } from '../pages/ProfilePage';
 import { SettingsPage } from '../pages/SettingsPage';
 import { AdminPage } from '../pages/AdminPage';
+import { AdminContentPage } from '../pages/AdminContentPage';
 import { NotFoundPage } from '../pages/NotFoundPage';
 import { AccessDeniedPage } from '../pages/AccessDeniedPage';
 
@@ -66,6 +67,11 @@ export const AppRoutes: React.FC = () => {
         }
       >
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/admin/categories" element={<AdminContentPage resource="categories" />} />
+        <Route path="/admin/modules" element={<AdminContentPage resource="modules" />} />
+        <Route path="/admin/quizzes" element={<AdminContentPage resource="quizzes" />} />
+        <Route path="/admin/scenarios" element={<AdminContentPage resource="scenarios" />} />
+        <Route path="/admin/badges" element={<AdminContentPage resource="badges" />} />
       </Route>
     </Routes>
   );

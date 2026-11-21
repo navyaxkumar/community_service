@@ -24,6 +24,13 @@ public class LearningModulesController : ControllerBase
         return Ok(await _service.GetPublishedAsync(cancellationToken));
     }
 
+    [HttpGet("manage")]
+    [Authorize(Roles = Roles.Admin)]
+    public async Task<IActionResult> GetAllForManagement(CancellationToken cancellationToken)
+    {
+        return Ok(await _service.GetAllAsync(cancellationToken));
+    }
+
     [HttpGet("category/{categoryId:int}")]
     [Authorize]
     public async Task<IActionResult> GetByCategory(int categoryId, CancellationToken cancellationToken)

@@ -1,16 +1,36 @@
 import React, { useEffect, useState } from 'react';
-import { learningService } from '../services/learningService';
+import { Link } from 'react-router-dom';
+import {
+  ArrowUpRight,
+  BadgeCheck,
+  BookOpen,
+  ClipboardList,
+  FolderKanban,
+  Plus,
+  ShieldAlert,
+} from 'lucide-react';
+import { badgeService } from '../services/badgeService';
 import { fraudService } from '../services/fraudService';
+import { learningService } from '../services/learningService';
 import { quizService } from '../services/quizService';
 import { scenarioService } from '../services/scenarioService';
-import { badgeService } from '../services/badgeService';
-import { LearningModule } from '../types/learning';
+import { Badge, Scenario } from '../types/badge';
 import { FraudCategory } from '../types/fraud';
+import { LearningModule } from '../types/learning';
 import { Quiz } from '../types/quiz';
-import { Scenario } from '../types/badge';
-import { Badge } from '../types/badge';
-import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { ErrorMessage } from '../components/common/ErrorMessage';
+import { LoadingSpinner } from '../components/common/LoadingSpinner';
+
+type RecentItem = {
+  id: number;
+  title: string;
+  type: string;
+  createdAt: string;
+  href: string;
+};
+
+const formatDate = (date: string) =>
+  new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 
 export const AdminPage: React.FC = () => {
   const [categories, setCategories] = useState<FraudCategory[]>([]);
@@ -18,370 +38,178 @@ export const AdminPage: React.FC = () => {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [badges, setBadges] = useState<Badge[]>([]);
-
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // New Category Form State
-  const [newCatName, setNewCatName] = useState('');
-  const [newCatDesc, setNewCatDesc] = useState('');
-  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
-  const [catActionMessage, setCatActionMessage] = useState<string | null>(null);
-
-  // New Module Form State
-  const [showModuleModal, setShowModuleModal] = useState(false);
-  const [modTitle, setModTitle] = useState('');
-  const [modDesc, setModDesc] = useState('');
-  const [modContent, setModContent] = useState('');
-  const [modCatId, setModCatId] = useState<number | undefined>(undefined);
-  const [isCreatingModule, setIsCreatingModule] = useState(false);
-  const [modActionMessage, setModActionMessage] = useState<string | null>(null);
-
-  const loadAdminData = async () => {
+  const loadOverview = async () => {
     setIsLoading(true);
     setError(null);
-
     try {
-      const [cats, mods, qzs, scens, bdgs] = await Promise.all([
-        fraudService.getCategories().catch(() => []),
-        learningService.getPublishedModules().catch(() => []),
-        quizService.getPublishedQuizzes().catch(() => []),
-        scenarioService.getPublishedScenarios().catch(() => []),
-        badgeService.getActiveBadges().catch(() => []),
+      const [categoryData, moduleData, quizData, scenarioData, badgeData] = await Promise.all([
+        fraudService.getCategories(),
+        learningService.getPublishedModules(),
+        quizService.getPublishedQuizzes(),
+        scenarioService.getPublishedScenarios(),
+        badgeService.getActiveBadges(),
       ]);
-
-      setCategories(cats);
-      setModules(mods);
-      setQuizzes(qzs);
-      setScenarios(scens);
-      setBadges(bdgs);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load administrative resources.');
+      setCategories(categoryData);
+      setModules(moduleData);
+      setQuizzes(quizData);
+      setScenarios(scenarioData);
+      setBadges(badgeData);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Could not load the admin overview.');
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadAdminData();
+    void loadOverview();
   }, []);
 
-  const handleCreateCategory = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newCatName.trim()) return;
+  const recentItems: RecentItem[] = [
+    ...modules.map((item) => ({
+      id: item.id,
+      title: item.title,
+      type: 'Learning module',
+      createdAt: item.createdAt,
+      href: '/admin/modules',
+    })),
+    ...quizzes.map((item) => ({
+      id: item.id,
+      title: item.title,
+      type: 'Quiz',
+      createdAt: item.createdAt,
+      href: '/admin/quizzes',
+    })),
+    ...scenarios.map((item) => ({
+      id: item.id,
+      title: item.title,
+      type: 'Scenario',
+      createdAt: item.createdAt,
+      href: '/admin/scenarios',
+    })),
+  ]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 6);
 
-    setIsCreatingCategory(true);
-    setCatActionMessage(null);
-
-    try {
-      const created = await fraudService.createCategory({
-        name: newCatName.trim(),
-        description: newCatDesc.trim() || undefined,
-        isActive: true,
-      });
-
-      setCategories((prev) => [...prev, created]);
-      setNewCatName('');
-      setNewCatDesc('');
-      setCatActionMessage(`Successfully created category "${created.name}".`);
-    } catch (err: any) {
-      setError(err.message || 'Failed to create category.');
-    } finally {
-      setIsCreatingCategory(false);
-    }
-  };
-
-  const handleCreateModule = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!modTitle.trim() || !modContent.trim()) return;
-
-    setIsCreatingModule(true);
-    setModActionMessage(null);
-
-    try {
-      const created = await learningService.createModule({
-        title: modTitle.trim(),
-        description: modDesc.trim() || undefined,
-        content: modContent.trim(),
-        order: modules.length + 1,
-        isPublished: true,
-        fraudCategoryId: modCatId || (categories[0]?.id ?? 1),
-      });
-
-      setModules((prev) => [...prev, created]);
-      setModTitle('');
-      setModDesc('');
-      setModContent('');
-      setShowModuleModal(false);
-      setModActionMessage(`Successfully published module "${created.title}".`);
-    } catch (err: any) {
-      setError(err.message || 'Failed to publish module.');
-    } finally {
-      setIsCreatingModule(false);
-    }
-  };
+  const stats = [
+    { label: 'Threat categories', value: categories.length, icon: ShieldAlert, href: '/admin/categories' },
+    { label: 'Learning modules', value: modules.length, icon: BookOpen, href: '/admin/modules' },
+    { label: 'Published quizzes', value: quizzes.length, icon: ClipboardList, href: '/admin/quizzes' },
+    { label: 'Scenarios', value: scenarios.length, icon: FolderKanban, href: '/admin/scenarios' },
+    { label: 'Active badges', value: badges.length, icon: BadgeCheck, href: '/admin/badges' },
+  ];
 
   if (isLoading) {
-    return (
-      <div className="py-16">
-        <LoadingSpinner label="Loading administrative platform data..." size="lg" />
-      </div>
-    );
+    return <LoadingSpinner label="Loading platform overview..." size="lg" />;
   }
 
   return (
-    <div className="space-y-10">
-      {/* Header */}
-      <div>
-        <span className="text-xs uppercase tracking-widest text-[#191919]/50 font-semibold block mb-1">
-          Server-Enforced Authorization
-        </span>
-        <h2 className="text-2xl sm:text-3xl font-serif text-[#191919]">
-          Platform Administration & Content Oversight
-        </h2>
-        <p className="text-xs sm:text-sm text-[#191919]/65 mt-1 leading-relaxed">
-          Manage verified threat vectors, publish learning curriculum modules, and monitor platform entity totals through authoritative ASP.NET Core API endpoints.
-        </p>
-      </div>
-
-      {error && <ErrorMessage message={error} onRetry={loadAdminData} />}
-
-      {/* Aggregate Overview Stat Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        <div className="p-4 bg-white border border-gray-200 rounded-xl shadow-sm text-center">
-          <span className="text-[10px] uppercase font-bold text-[#191919]/50 block">Threat Categories</span>
-          <span className="text-2xl font-serif font-bold text-[#191919] mt-1 block">{categories.length}</span>
-        </div>
-        <div className="p-4 bg-white border border-gray-200 rounded-xl shadow-sm text-center">
-          <span className="text-[10px] uppercase font-bold text-[#191919]/50 block">Published Modules</span>
-          <span className="text-2xl font-serif font-bold text-[#191919] mt-1 block">{modules.length}</span>
-        </div>
-        <div className="p-4 bg-white border border-gray-200 rounded-xl shadow-sm text-center">
-          <span className="text-[10px] uppercase font-bold text-[#191919]/50 block">Active Quizzes</span>
-          <span className="text-2xl font-serif font-bold text-[#191919] mt-1 block">{quizzes.length}</span>
-        </div>
-        <div className="p-4 bg-white border border-gray-200 rounded-xl shadow-sm text-center">
-          <span className="text-[10px] uppercase font-bold text-[#191919]/50 block">Scenarios</span>
-          <span className="text-2xl font-serif font-bold text-[#191919] mt-1 block">{scenarios.length}</span>
-        </div>
-        <div className="p-4 bg-white border border-gray-200 rounded-xl shadow-sm text-center col-span-2 sm:col-span-1">
-          <span className="text-[10px] uppercase font-bold text-[#191919]/50 block">Safety Badges</span>
-          <span className="text-2xl font-serif font-bold text-[#191919] mt-1 block">{badges.length}</span>
-        </div>
-      </div>
-
-      {/* Section 1: Learning Modules Management */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-gray-100 gap-3">
-          <div>
-            <h3 className="text-lg font-serif text-[#191919]">Learning Modules Management</h3>
-            <p className="text-xs text-[#191919]/60">
-              Curriculum items stored in SQL Server and published via <code className="font-mono text-[#191919]">/api/learning-modules</code>.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowModuleModal(!showModuleModal)}
-            className="text-xs font-medium px-4 py-2 bg-[#191919] text-white rounded-full hover:bg-black/85 transition-colors shrink-0"
-          >
-            {showModuleModal ? 'Close Form' : '+ Create New Module'}
-          </button>
-        </div>
-
-        {modActionMessage && (
-          <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl">
-            {modActionMessage}
-          </div>
-        )}
-
-        {/* Create Module Inline Form */}
-        {showModuleModal && (
-          <form onSubmit={handleCreateModule} className="p-5 bg-[#F4F3F3] rounded-xl space-y-4 border border-gray-200">
-            <h4 className="text-xs uppercase font-bold tracking-wider text-[#191919]">
-              Publish New Learning Module
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[11px] font-semibold text-[#191919]/70 uppercase mb-1">
-                  Module Title
-                </label>
-                <input
-                  type="text"
-                  value={modTitle}
-                  onChange={(e) => setModTitle(e.target.value)}
-                  placeholder="e.g. Recognizing Social Engineering Calls"
-                  required
-                  className="w-full text-xs p-3 bg-white border border-gray-200 rounded-lg"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-[#191919]/70 uppercase mb-1">
-                  Threat Category
-                </label>
-                <select
-                  value={modCatId || ''}
-                  onChange={(e) => setModCatId(parseInt(e.target.value, 10))}
-                  className="w-full text-xs p-3 bg-white border border-gray-200 rounded-lg"
-                >
-                  <option value="">Select Category...</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-semibold text-[#191919]/70 uppercase mb-1">
-                Summary Description
-              </label>
-              <input
-                type="text"
-                value={modDesc}
-                onChange={(e) => setModDesc(e.target.value)}
-                placeholder="Brief summary of the lesson..."
-                className="w-full text-xs p-3 bg-white border border-gray-200 rounded-lg"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-semibold text-[#191919]/70 uppercase mb-1">
-                Lesson Content
-              </label>
-              <textarea
-                rows={5}
-                value={modContent}
-                onChange={(e) => setModContent(e.target.value)}
-                placeholder="Detailed educational text, safe habits, and examples..."
-                required
-                className="w-full text-xs p-3 bg-white border border-gray-200 rounded-lg resize-y"
-              />
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowModuleModal(false)}
-                className="px-4 py-2 text-xs font-medium text-gray-600 hover:text-black"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isCreatingModule}
-                className="px-5 py-2 text-xs font-medium bg-[#191919] text-white rounded-full hover:bg-black/85 disabled:opacity-50"
-              >
-                {isCreatingModule ? 'Publishing...' : 'Publish Module to API'}
-              </button>
-            </div>
-          </form>
-        )}
-
-        {/* Modules Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="border-b border-gray-200 text-[#191919]/50 font-semibold uppercase tracking-wider text-[10px]">
-                <th className="py-3 px-3">Order</th>
-                <th className="py-3 px-3">Title</th>
-                <th className="py-3 px-3">Category</th>
-                <th className="py-3 px-3">Status</th>
-                <th className="py-3 px-3">Created</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {modules.map((m) => {
-                const cat = categories.find((c) => c.id === m.fraudCategoryId);
-                return (
-                  <tr key={m.id} className="hover:bg-gray-50/50">
-                    <td className="py-3 px-3 font-mono text-gray-500">#{m.order || m.id}</td>
-                    <td className="py-3 px-3 font-medium text-[#191919]">{m.title}</td>
-                    <td className="py-3 px-3 text-gray-600">{cat?.name || 'General'}</td>
-                    <td className="py-3 px-3">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800">
-                        Published
-                      </span>
-                    </td>
-                    <td className="py-3 px-3 text-gray-500">
-                      {new Date(m.createdAt).toLocaleDateString()}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Section 2: Threat Categories Management */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
-        <div className="pb-4 border-b border-gray-100">
-          <h3 className="text-lg font-serif text-[#191919]">Fraud Categories</h3>
-          <p className="text-xs text-[#191919]/60">
-            Active threat categories configured in the ASP.NET Core database.
+    <div className="space-y-7">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#191919]/45">
+            Platform overview
+          </p>
+          <h2 className="mt-1 font-serif text-2xl sm:text-3xl">Good to see you.</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#191919]/60">
+            Review your live educational content and keep the safety library current.
           </p>
         </div>
+        <button
+          type="button"
+          onClick={() => void loadOverview()}
+          className="self-start rounded-full border border-gray-300 bg-white px-4 py-2 text-xs font-medium hover:border-[#191919] sm:self-auto"
+        >
+          Refresh data
+        </button>
+      </div>
 
-        {catActionMessage && (
-          <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl">
-            {catActionMessage}
-          </div>
-        )}
+      {error && <ErrorMessage title="Overview could not be refreshed" message={error} onRetry={() => void loadOverview()} />}
 
-        {/* Add Category Form */}
-        <form onSubmit={handleCreateCategory} className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
-          <div className="sm:col-span-5">
-            <label className="block text-[11px] font-semibold text-[#191919]/70 uppercase mb-1">
-              Category Name
-            </label>
-            <input
-              type="text"
-              value={newCatName}
-              onChange={(e) => setNewCatName(e.target.value)}
-              placeholder="e.g. Identity & Document Theft"
-              required
-              className="w-full text-xs p-3 border border-gray-200 rounded-lg"
-            />
-          </div>
-          <div className="sm:col-span-5">
-            <label className="block text-[11px] font-semibold text-[#191919]/70 uppercase mb-1">
-              Description (Optional)
-            </label>
-            <input
-              type="text"
-              value={newCatDesc}
-              onChange={(e) => setNewCatDesc(e.target.value)}
-              placeholder="Brief explanation of threat pattern..."
-              className="w-full text-xs p-3 border border-gray-200 rounded-lg"
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <button
-              type="submit"
-              disabled={isCreatingCategory}
-              className="w-full py-3 bg-[#191919] text-white text-xs font-medium rounded-lg hover:bg-black/85 disabled:opacity-50"
-            >
-              {isCreatingCategory ? 'Adding...' : '+ Add Category'}
-            </button>
-          </div>
-        </form>
-
-        {/* Categories Chips */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-2">
-          {categories.map((cat) => (
-            <div key={cat.id} className="p-4 bg-[#F4F3F3] rounded-xl border border-gray-200/70 text-xs">
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-semibold text-[#191919]">{cat.name}</span>
-                <span className="font-mono text-[10px] text-gray-500">#{cat.id}</span>
-              </div>
-              <p className="text-[11px] text-[#191919]/65">
-                {cat.description || 'Active fraud category in database.'}
-              </p>
+      <section aria-label="Content totals" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        {stats.map(({ label, value, icon: Icon, href }) => (
+          <Link
+            key={label}
+            to={href}
+            className="group rounded-2xl border border-gray-200 bg-white p-5 transition hover:-translate-y-0.5 hover:border-gray-400 hover:shadow-sm"
+          >
+            <div className="flex items-center justify-between">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F3F3F1] text-[#191919]">
+                <Icon size={17} aria-hidden="true" />
+              </span>
+              <ArrowUpRight size={16} className="text-[#191919]/35 transition group-hover:text-[#191919]" />
             </div>
-          ))}
-        </div>
+            <p className="mt-5 text-3xl font-semibold tracking-tight">{value}</p>
+            <p className="mt-1 text-xs text-[#191919]/55">{label}</p>
+          </Link>
+        ))}
+      </section>
+
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(280px,0.8fr)]">
+        <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+          <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 sm:px-6">
+            <div>
+              <h3 className="font-serif text-lg">Recently added content</h3>
+              <p className="mt-1 text-xs text-[#191919]/50">Latest items available in the learning library</p>
+            </div>
+            <Link to="/admin/modules" className="text-xs font-semibold underline underline-offset-4">
+              View library
+            </Link>
+          </div>
+          {recentItems.length ? (
+            <div className="divide-y divide-gray-100">
+              {recentItems.map((item) => (
+                <Link
+                  key={`${item.type}-${item.id}`}
+                  to={item.href}
+                  className="flex items-center justify-between gap-4 px-5 py-4 transition hover:bg-[#FAFAF8] sm:px-6"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{item.title}</p>
+                    <p className="mt-1 text-[11px] text-[#191919]/50">{item.type}</p>
+                  </div>
+                  <time className="shrink-0 text-[11px] text-[#191919]/45">{formatDate(item.createdAt)}</time>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="px-6 py-10 text-center text-sm text-[#191919]/55">No published content to show yet.</p>
+          )}
+        </section>
+
+        <section className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6">
+          <h3 className="font-serif text-lg">Create content</h3>
+          <p className="mt-1 text-xs leading-5 text-[#191919]/55">
+            Add practical material to the public safety library.
+          </p>
+          <div className="mt-5 space-y-2">
+            {[
+              { label: 'Learning module', href: '/admin/modules', icon: BookOpen },
+              { label: 'Threat category', href: '/admin/categories', icon: ShieldAlert },
+              { label: 'Quiz', href: '/admin/quizzes', icon: ClipboardList },
+              { label: 'Scenario', href: '/admin/scenarios', icon: FolderKanban },
+              { label: 'Safety badge', href: '/admin/badges', icon: BadgeCheck },
+            ].map(({ label, href, icon: Icon }) => (
+              <Link
+                key={label}
+                to={href}
+                className="flex items-center justify-between rounded-xl border border-gray-100 px-3.5 py-3 text-xs font-medium transition hover:border-gray-300 hover:bg-[#FAFAF8]"
+              >
+                <span className="flex items-center gap-2.5">
+                  <Icon size={15} aria-hidden="true" className="text-[#191919]/60" />
+                  {label}
+                </span>
+                <Plus size={15} aria-hidden="true" />
+              </Link>
+            ))}
+          </div>
+          <div className="mt-5 rounded-xl bg-[#F6F5F2] p-4 text-[11px] leading-5 text-[#191919]/60">
+            Counts reflect content returned by the live API. User and activity analytics are not exposed by the current backend.
+          </div>
+        </section>
       </div>
     </div>
   );

@@ -28,6 +28,12 @@ public class ScenarioService : IScenarioService
         return scenarios.Select(MapToResponse).ToList();
     }
 
+    public async Task<List<ScenarioResponseDto>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        var scenarios = await _repository.GetAllAsync(cancellationToken);
+        return scenarios.Select(MapToResponse).ToList();
+    }
+
     public async Task<List<ScenarioResponseDto>> GetByCategoryAsync(int fraudCategoryId, CancellationToken cancellationToken = default)
     {
         var scenarios = await _repository.GetByCategoryAsync(fraudCategoryId, cancellationToken);

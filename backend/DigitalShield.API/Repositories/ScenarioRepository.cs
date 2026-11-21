@@ -32,6 +32,15 @@ public class ScenarioRepository : IScenarioRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<List<Scenario>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.Scenarios
+            .AsNoTracking()
+            .Include(s => s.FraudCategory)
+            .OrderBy(s => s.Title)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<List<Scenario>> GetByCategoryAsync(int fraudCategoryId, CancellationToken cancellationToken = default)
     {
         return await _context.Scenarios

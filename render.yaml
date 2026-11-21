@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: digitalshield-api
+    runtime: docker
+    plan: free
+    rootDir: backend/DigitalShield.API
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ConnectionStrings__DefaultConnection
+        sync: false
+      - key: Jwt__SecretKey
+        sync: false
+      - key: Jwt__Issuer
+        value: DigitalShield
+      - key: Jwt__Audience
+        value: DigitalShieldUsers
+      - key: Jwt__ExpiryMinutes
+        value: "60"
+      - key: Cors__AllowedOrigins
+        sync: false
+      - key: DatabaseSeeding__Enabled
+        value: "true"
